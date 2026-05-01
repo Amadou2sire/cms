@@ -2,7 +2,8 @@ import React from 'react'
 import { type BlockNode } from './store/builderStore'
 import { useBuilderStore } from './store/builderStore'
 import { useDroppable } from '@dnd-kit/core'
-import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu } from 'lucide-react'
+import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu, Newspaper, ArrowRight, Calendar, MessageCircle, Mail, Phone, MapPin, Send } from 'lucide-react'
+import client from '../api/client'
 
 const ICON_MAP: Record<string, any> = {
   Monitor,
@@ -749,6 +750,121 @@ const LabBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ nod
   )
 }
 
+const NewsBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const {
+    title = 'Dernières Actualités',
+    accentText = 'NEWSROOM',
+    bg = '#ffffff',
+    limit = 4,
+    margin = '0',
+    padding = '80px 48px'
+  } = node.props
+
+  const [articles, setArticles] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const res = await client.get('/articles/public/')
+        // Sort by date and limit
+        const sorted = res.data
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, limit)
+        setArticles(sorted)
+      } catch (err) {
+        console.error("Failed to fetch news for block", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchArticles()
+  }, [limit])
+
+  return (
+    <div style={{ backgroundColor: bg, margin }} className="w-full">
+      <div style={{ padding }} className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div className="space-y-4">
+            {accentText && (
+              <p className="text-[#e5482d] font-black uppercase tracking-[0.2em] text-[10px] animate-in fade-in duration-700">
+                {accentText}
+              </p>
+            )}
+            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight animate-in fade-in slide-in-from-left-4 duration-1000">
+              {title}
+            </h2>
+          </div>
+          <div className="w-24 h-1 bg-[#e5482d] rounded-full hidden md:block mb-4" />
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {loading ? (
+            Array.from({ length: limit }).map((_, i) => (
+              <div key={i} className="space-y-4 animate-pulse">
+                <div className="aspect-[4/3] bg-neutral-100 rounded-2xl" />
+                <div className="h-4 bg-neutral-100 rounded w-1/2" />
+                <div className="h-6 bg-neutral-100 rounded w-full" />
+              </div>
+            ))
+          ) : articles.length === 0 ? (
+            <div className="col-span-full py-12 text-center border border-dashed border-neutral-200 rounded-2xl text-neutral-400 text-sm uppercase tracking-widest">
+              Aucun article publié
+            </div>
+          ) : (
+            articles.map((article, idx) => (
+              <a 
+                key={article.id} 
+                href={`/articles/${article.slug || article.id}`}
+                className="group flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-8 duration-700 no-underline"
+                style={{ transitionDelay: `${idx * 150}ms` }}
+              >
+                {/* Image Wrap */}
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-sm bg-neutral-100">
+                  {article.image_url ? (
+                    <img 
+                      src={article.image_url} 
+                      alt={article.title} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                      <Newspaper size={40} />
+                    </div>
+                  )}
+                  {/* Badge Date Overlay */}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
+                    <Calendar size={12} className="text-[#e5482d]" />
+                    <span className="text-[9px] font-black uppercase text-neutral-900 tracking-tighter">
+                      {new Date(article.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-3 px-1">
+                  <h3 className="text-xl font-black text-neutral-900 tracking-tight leading-tight group-hover:text-[#e5482d] transition-colors line-clamp-2">
+                    {article.title}
+                  </h3>
+                  <div 
+                    className="text-neutral-500 text-sm leading-relaxed line-clamp-3 opacity-80"
+                    dangerouslySetInnerHTML={{ __html: article.content.substring(0, 150) + '...' }}
+                  />
+                  <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-900 group-hover:text-[#e5482d] transition-all pt-2">
+                    Lire la suite <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                  </div>
+                </div>
+              </a>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
   const { 
@@ -920,16 +1036,25 @@ const FooterBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
           
           {columns.map((col: any, idx: number) => (
             <div key={idx} className="space-y-6">
-              <h5 className="font-bold uppercase tracking-widest text-xs opacity-40">{col.title || 'Section'}</h5>
-              <ul className="space-y-4">
-                {(col.links || col.children || []).map((link: any, lIdx: number) => (
-                  <li key={lIdx}>
-                    <a href={link.href} className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              {col.href && col.href !== '#' ? (
+                <a href={col.href} className="block font-bold uppercase tracking-widest text-xs opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">
+                  {col.label || 'Section'}
+                </a>
+              ) : (
+                <h5 className="font-bold uppercase tracking-widest text-xs opacity-40">{col.label || 'Section'}</h5>
+              )}
+              
+              {(col.children && col.children.length > 0) && (
+                <ul className="space-y-4">
+                  {col.children.map((link: any, lIdx: number) => (
+                    <li key={lIdx}>
+                      <a href={link.href} className="text-sm opacity-70 hover:opacity-100 transition-opacity">
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
@@ -946,9 +1071,188 @@ const FooterBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
   )
 }
 
+const FAQBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { 
+    title = 'Questions Fréquentes', 
+    subtitle = '', 
+    items = [], 
+    bg = '#ffffff', 
+    padding = '80px 48px' 
+  } = node.props
+  
+  const [openIndex, setOpenIndex] = React.useState<number | null>(0)
+
+  return (
+    <section style={{ backgroundColor: bg, padding }} className="w-full">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-16">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="w-10 h-[1px] bg-red-600" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-600">F.A.Q</span>
+            <div className="w-10 h-[1px] bg-red-600" />
+          </div>
+          <h2 className="text-4xl md:text-5xl font-black text-black leading-tight tracking-tighter mb-4 uppercase">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-neutral-500 max-w-xl mx-auto text-sm leading-relaxed">
+              {subtitle}
+            </p>
+          )}
+        </header>
+
+        <div className="space-y-4">
+          {items.map((item: any, idx: number) => (
+            <div 
+              key={idx} 
+              className={`border border-neutral-100 rounded-3xl transition-all duration-300 ${
+                openIndex === idx ? 'bg-neutral-50 shadow-xl shadow-neutral-100' : 'bg-white hover:border-neutral-200'
+              }`}
+            >
+              <button
+                onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
+                className="w-full flex items-center justify-between p-6 md:p-8 text-left group"
+              >
+                <div className="flex items-center gap-6">
+                  <span className={`text-[10px] font-black transition-colors ${openIndex === idx ? 'text-red-600' : 'text-neutral-300'}`}>
+                    0{idx + 1}
+                  </span>
+                  <span className="text-sm md:text-base font-bold text-black group-hover:text-red-600 transition-colors">
+                    {item.question}
+                  </span>
+                </div>
+                <div className={`w-10 h-10 rounded-full border border-neutral-100 flex items-center justify-center transition-transform duration-500 ${openIndex === idx ? 'rotate-180 bg-red-600 border-red-600 text-white' : 'text-neutral-400 group-hover:bg-neutral-50'}`}>
+                  <ChevronDown size={18} />
+                </div>
+              </button>
+              
+              <div 
+                className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                  openIndex === idx ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div 
+                  className="px-6 md:px-20 pb-8 text-neutral-600 text-sm md:text-base leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: item.answer }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // --- Registry ---
 
 // --- Wrapper with selection outline ---
+
+const ContactBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { 
+    title = 'Contactez-nous',
+    subtitle = '',
+    email = '',
+    phone = '',
+    address = '',
+    mapUrl = '',
+    buttonLabel = 'Envoyer',
+    bg = '#ffffff',
+    padding = '100px 48px'
+  } = node.props
+
+  return (
+    <section style={{ backgroundColor: bg, padding }} className="w-full font-['Inter',sans-serif]">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+          {/* Info Side */}
+          <div className="space-y-12">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-red-600 mb-4 block">Get in touch</span>
+              <h2 className="text-4xl md:text-6xl font-black text-neutral-900 tracking-tighter uppercase leading-none">
+                {title}
+              </h2>
+              {subtitle && <p className="mt-6 text-neutral-500 text-lg max-w-md leading-relaxed">{subtitle}</p>}
+            </div>
+
+            <div className="space-y-8">
+              <div className="flex items-start gap-6 group">
+                <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-white shrink-0 group-hover:bg-red-600 transition-colors duration-500 shadow-xl shadow-neutral-200">
+                  <Mail size={24} />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1">Email</h4>
+                  <p className="text-xl font-bold text-neutral-900">{email}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-6 group">
+                <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-white shrink-0 group-hover:bg-red-600 transition-colors duration-500 shadow-xl shadow-neutral-200">
+                  <Phone size={24} />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1">Téléphone</h4>
+                  <p className="text-xl font-bold text-neutral-900">{phone}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-6 group">
+                <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-white shrink-0 group-hover:bg-red-600 transition-colors duration-500 shadow-xl shadow-neutral-200">
+                  <MapPin size={24} />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1">Siège Social</h4>
+                  <p className="text-xl font-bold text-neutral-900 leading-tight">{address}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Side */}
+          <div className="bg-neutral-50 p-10 md:p-16 rounded-[3rem] border border-neutral-100 shadow-2xl shadow-neutral-200/50">
+            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 ml-2">Nom complet</label>
+                  <input type="text" placeholder="John Doe" className="w-full bg-white border border-neutral-200 rounded-2xl px-6 py-4 text-sm font-bold focus:border-red-600 outline-none transition-all shadow-sm" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 ml-2">Email professionnel</label>
+                  <input type="email" placeholder="john@company.com" className="w-full bg-white border border-neutral-200 rounded-2xl px-6 py-4 text-sm font-bold focus:border-red-600 outline-none transition-all shadow-sm" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 ml-2">Sujet</label>
+                <input type="text" placeholder="Demande de devis" className="w-full bg-white border border-neutral-200 rounded-2xl px-6 py-4 text-sm font-bold focus:border-red-600 outline-none transition-all shadow-sm" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400 ml-2">Message</label>
+                <textarea rows={5} placeholder="Décrivez votre projet..." className="w-full bg-white border border-neutral-200 rounded-3xl px-6 py-5 text-sm font-bold focus:border-red-600 outline-none transition-all shadow-sm resize-none"></textarea>
+              </div>
+              <button className="w-full bg-neutral-900 hover:bg-red-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all duration-500 shadow-xl flex items-center justify-center gap-3 active:scale-95">
+                {buttonLabel}
+                <Send size={16} />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Map Section */}
+        {mapUrl && (
+          <div className="mt-24 rounded-[3rem] overflow-hidden border border-neutral-200 shadow-2xl h-[500px]">
+            <iframe 
+              src={mapUrl.includes('<iframe') ? mapUrl.match(/src="([^"]+)"/)?.[1] || mapUrl : mapUrl}
+              className="w-full h-full grayscale hover:grayscale-0 transition-all duration-1000"
+              style={{ border: 0 }}
+              allowFullScreen={true}
+              loading="lazy"
+            ></iframe>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
 
 const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = ({ node, mode = 'edit' }) => {
   const selectBlock = useBuilderStore((state) => state.selectBlock)
@@ -975,6 +1279,9 @@ const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = 
     lab: (props) => <LabBlock {...props} />,
     header: (props) => <HeaderBlock {...props} />,
     footer: (props) => <FooterBlock {...props} />,
+    news: (props) => <NewsBlock {...props} />,
+    faq: (props) => <FAQBlock {...props} />,
+    contact: (props) => <ContactBlock {...props} />,
   }
 
   const Component = COMPONENTS[node.type]

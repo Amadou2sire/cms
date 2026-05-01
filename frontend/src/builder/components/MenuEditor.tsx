@@ -1,5 +1,5 @@
 import React from 'react'
-import { Plus, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 interface MenuItem {
   label: string
@@ -14,11 +14,10 @@ interface MenuEditorProps {
 }
 
 const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages = [] }) => {
-  const addItem = (parentItems: MenuItem[], path: number[] = []) => {
-    const newItems = [...items]
+  const addItem = (_: MenuItem[], path: number[] = []) => {
+    const newItems = JSON.parse(JSON.stringify(items))
     let current = newItems
     
-    // Navigate to the correct nesting level
     for (let i = 0; i < path.length; i++) {
       current = current[path[i]].children
     }
@@ -28,7 +27,7 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages
   }
 
   const removeItem = (path: number[]) => {
-    const newItems = [...items]
+    const newItems = JSON.parse(JSON.stringify(items))
     let current = newItems
     
     for (let i = 0; i < path.length - 1; i++) {
@@ -40,7 +39,7 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages
   }
 
   const updateItem = (path: number[], field: keyof MenuItem, value: string) => {
-    const newItems = [...items]
+    const newItems = JSON.parse(JSON.stringify(items))
     let current: any = newItems
     
     for (let i = 0; i < path.length - 1; i++) {
@@ -52,6 +51,13 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages
   }
 
   const renderItem = (item: MenuItem, path: number[], level: number) => {
+    const systemPages = [
+      { title: '🏠 Accueil', slug: '' },
+      { title: '📰 Actualités', slug: 'actualites' },
+    ]
+    const allOptions = [...systemPages, ...availablePages]
+    const hasChildren = item.children && item.children.length > 0
+
     return (
       <div key={path.join('-')} className="space-y-2">
         <div className="flex items-center gap-2 group">
@@ -64,32 +70,35 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages
                value={item.label}
                onChange={(e) => updateItem(path, 'label', e.target.value)}
                className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-white placeholder:text-neutral-600"
-               placeholder="Label"
+               placeholder="Libellé (ex: Boutique)"
              />
-              <div className="flex items-center gap-1 w-1/2">
-                <input 
-                  type="text" 
-                  value={item.href}
-                  onChange={(e) => updateItem(path, 'href', e.target.value)}
-                  className="flex-1 bg-neutral-900/50 border border-neutral-700 rounded-l px-2 py-1 text-[10px] font-mono text-neutral-400 focus:border-blue-500 outline-none"
-                  placeholder="URL ou /slug"
-                />
+              <div className="flex items-center gap-1 w-3/5">
+                <div className="relative flex-1">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] text-neutral-600 font-mono">URL:</span>
+                  <input 
+                    type="text" 
+                    value={item.href}
+                    onChange={(e) => updateItem(path, 'href', e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg pl-8 pr-2 py-1.5 text-[10px] font-mono text-blue-400 focus:border-blue-500 outline-none"
+                    placeholder="/votre-lien"
+                  />
+                </div>
                 <select
-                  className="bg-neutral-800 border-y border-r border-neutral-700 rounded-r px-1 py-1 text-[9px] font-bold text-blue-400 focus:outline-none cursor-pointer max-w-[80px]"
+                  className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-[9px] font-bold text-neutral-400 focus:border-blue-500 outline-none cursor-pointer max-w-[100px]"
                   onChange={(e) => {
-                    if (e.target.value) {
-                      updateItem(path, 'href', `/${e.target.value}`)
-                      // If label is still default, update it too
-                      if (item.label === 'Nouveau lien') {
-                        const page = availablePages.find(p => p.slug === e.target.value)
-                        if (page) updateItem(path, 'label', page.title)
-                      }
+                    const slug = e.target.value
+                    const link = slug === '' ? '/' : `/${slug}`
+                    updateItem(path, 'href', link)
+                    
+                    if (item.label === 'Nouveau lien' || !item.label) {
+                      const page = allOptions.find(p => p.slug === slug)
+                      if (page) updateItem(path, 'label', page.title.replace(/^[^\s]+\s/, ''))
                     }
                   }}
                   value=""
                 >
-                  <option value="" disabled>Lier une page...</option>
-                  {availablePages.map(p => (
+                  <option value="" disabled>Lier...</option>
+                  {allOptions.map(p => (
                     <option key={p.slug} value={p.slug}>{p.title}</option>
                   ))}
                 </select>
@@ -112,7 +121,7 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages
           )}
         </div>
 
-        {item.children.length > 0 && (
+        {hasChildren && (
           <div className="ml-8 pl-4 border-l border-neutral-800 space-y-2 pt-2">
             {item.children.map((child, idx) => renderItem(child, [...path, idx], level + 1))}
           </div>

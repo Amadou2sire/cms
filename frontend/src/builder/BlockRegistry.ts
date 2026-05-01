@@ -535,5 +535,86 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       columns: { type: 'menu', label: 'Colonnes de liens', default: [] },
       padding: { type: 'spacing', label: 'Padding (T R B L)', default: '64px 48px 32px 48px' }
     }
+  },
+  news: {
+    type: 'news',
+    label: 'Actualités',
+    icon: 'Newspaper',
+    canHaveChildren: false,
+    defaultProps: {
+      title: 'Dernières Actualités',
+      accentText: 'NEWSROOM',
+      bg: '#ffffff',
+      limit: 4,
+      margin: '0px 0px 0px 0px',
+      padding: '80px 48px 80px 48px'
+    },
+    propSchema: {
+      title: { type: 'string', label: 'Titre Section', default: 'Dernières Actualités' },
+      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'NEWSROOM' },
+      bg: { type: 'color', label: 'Fond', default: '#ffffff' },
+      limit: { type: 'number', label: 'Nombre d\'articles', default: 4 },
+      margin: { type: 'spacing', label: 'Marges (T R B L)', default: '0px 0px 0px 0px' },
+      padding: { type: 'spacing', label: 'Padding (T R B L)', default: '80px 48px 80px 48px' },
+    }
+  },
+  faq: {
+    type: 'faq',
+    label: 'FAQ Accordéon',
+    icon: 'MessageCircle',
+    canHaveChildren: false,
+    defaultProps: {
+      title: 'Questions Fréquentes',
+      subtitle: 'Tout ce que vous devez savoir sur nos services et processus.',
+      items: [
+        { question: 'Quels sont vos délais de production ?', answer: 'Nos délais varient selon la complexité des pièces, généralement entre 4 et 8 semaines.' },
+        { question: 'Êtes-vous certifiés ISO ?', answer: 'Oui, nous sommes certifiés ISO 9001 et IATF 16949 pour le secteur automobile.' }
+      ],
+      bg: '#ffffff',
+      padding: '80px 48px 80px 48px'
+    },
+    propSchema: {
+      title: { type: 'string', label: 'Titre', default: 'Questions Fréquentes' },
+      subtitle: { type: 'string', label: 'Sous-titre', default: 'Détails...' },
+      items: { 
+        type: 'list', 
+        label: 'Questions',
+        default: [],
+        itemSchema: {
+          question: { type: 'string', label: 'Question', default: 'Nouvelle Question' },
+          answer: { type: 'richtext', label: 'Réponse', default: 'Détails de la réponse...' }
+        }
+      },
+      bg: { type: 'color', label: 'Fond', default: '#ffffff' },
+      padding: { type: 'spacing', label: 'Padding (T R B L)', default: '80px 48px 80px 48px' }
+    }
+  },
+  contact: {
+    type: 'contact',
+    label: 'Contact & Formulaire',
+    icon: 'Mail',
+    canHaveChildren: false,
+    defaultProps: {
+      title: 'Contactez-nous',
+      subtitle: 'Une question ? Un projet ? Notre équipe est à votre écoute pour vous accompagner dans vos défis industriels.',
+      email: 'contact@fondinor.tn',
+      phone: '+216 71 000 000',
+      address: 'Zone Industrielle Bir Mcherga, Zaghouan, Tunisie',
+      mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3209.432657738245!2d10.1477!3d36.402!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzbCsDI0JzA3LjIiTiAxMMKwMDgnNTEuNyJF!5e0!3m2!1sfr!2stn!4v1620000000000!5m2!1sfr!2stn',
+      buttonLabel: 'Envoyer le message',
+      bg: '#ffffff',
+      padding: '100px 48px 100px 48px'
+    },
+    propSchema: {
+      title: { type: 'string', label: 'Titre', default: 'Contactez-nous' },
+      subtitle: { type: 'string', label: 'Sous-titre', default: 'Détails...' },
+      email: { type: 'string', label: 'E-mail', default: 'contact@fondinor.tn' },
+      phone: { type: 'string', label: 'Téléphone', default: '+216 71 000 000' },
+      address: { type: 'string', label: 'Adresse', default: 'Zone Industrielle...' },
+      mapUrl: { type: 'string', label: 'URL Iframe Google Maps', default: '' },
+      buttonLabel: { type: 'string', label: 'Texte Bouton', default: 'Envoyer' },
+      bg: { type: 'color', label: 'Fond', default: '#ffffff' },
+      padding: { type: 'spacing', label: 'Padding', default: '100px 48px 100px 48px' }
+    }
   }
 };

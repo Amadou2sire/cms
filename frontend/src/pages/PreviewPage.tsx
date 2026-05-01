@@ -87,9 +87,17 @@ const PreviewPage: React.FC = () => {
           />
         )}
         
-        {page.schema.root.children.map((block) => (
-          <BlockRenderer key={block.id} node={block} mode="preview" />
-        ))}
+        {page.schema.root.children.map((block) => {
+          // Override local header/footer props with global settings
+          let finalBlock = block
+          if (block.type === 'header' && headerConfig) {
+            finalBlock = { ...block, props: { ...block.props, ...headerConfig } }
+          }
+          if (block.type === 'footer' && footerConfig) {
+            finalBlock = { ...block, props: { ...block.props, ...footerConfig } }
+          }
+          return <BlockRenderer key={block.id} node={finalBlock} mode="preview" />
+        })}
 
         {/* Render Global Footer if not already in schema */}
         {page.schema.root.children.every(b => b.type !== 'footer') && footerConfig && (

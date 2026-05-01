@@ -18,10 +18,97 @@ const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
       client.get(pageUrl),
       client.get('/settings')
     ]).then(([pageRes, settingsRes]) => {
-      setPage(pageRes.data)
+      const pageData = pageRes.data
+      setPage(pageData)
       setHeaderConfig(settingsRes.data.header_config)
       setFooterConfig(settingsRes.data.footer_config)
       setLoading(false)
+
+      // Apply SEO settings
+      const seo = pageData.schema?.seo
+      if (seo) {
+        document.title = seo.metaTitle || pageData.title || 'Mon Site'
+        
+        // Meta description
+        let metaDesc = document.querySelector('meta[name="description"]')
+        if (!metaDesc) {
+          metaDesc = document.createElement('meta')
+          metaDesc.setAttribute('name', 'description')
+          document.head.appendChild(metaDesc)
+        }
+        metaDesc.setAttribute('content', seo.metaDescription || '')
+
+        // Robots (noindex)
+        let metaRobots = document.querySelector('meta[name="robots"]')
+        if (seo.noIndex) {
+          if (!metaRobots) {
+            metaRobots = document.createElement('meta')
+            metaRobots.setAttribute('name', 'robots')
+            document.head.appendChild(metaRobots)
+          }
+          metaRobots.setAttribute('content', 'noindex, nofollow')
+        } else if (metaRobots) {
+          metaRobots.setAttribute('content', 'index, follow')
+        }
+      }
+
+      // Apply GEO settings (JSON-LD for AI Engines)
+      const geo = pageData.schema?.geo
+      if (geo) {
+        let geoScript = document.getElementById('geo-ld-json')
+        if (!geoScript) {
+          geoScript = document.createElement('script')
+          geoScript.id = 'geo-ld-json'
+          geoScript.setAttribute('type', 'application/ld+json')
+          document.head.appendChild(geoScript)
+        }
+        
+        const geoData = {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": seo?.metaTitle || pageData.title,
+          "description": seo?.metaDescription,
+          "abstract": geo.aiSummary,
+          "keywords": geo.aiKeyFacts?.join(', '),
+          "mentions": {
+            "@type": "CreativeWork",
+            "text": geo.aiSummary,
+            "keywords": geo.aiKeyFacts
+          },
+          "speakable": {
+            "@type": "SpeakableSpecification",
+            "xpath": ["/html/head/title", "/html/head/meta[@name='description']/@content"]
+          }
+        }
+        geoScript.textContent = JSON.stringify(geoData)
+      }
+
+      // FAQ Schema (if FAQ block exists)
+      const faqBlocks = pageData.schema.root.children.filter((b: any) => b.type === 'faq')
+      if (faqBlocks.length > 0) {
+        let faqScript = document.getElementById('faq-ld-json')
+        if (!faqScript) {
+          faqScript = document.createElement('script')
+          faqScript.id = 'faq-ld-json'
+          faqScript.setAttribute('type', 'application/ld+json')
+          document.head.appendChild(faqScript)
+        }
+
+        const allQuestions = faqBlocks.flatMap((b: any) => b.props.items || [])
+        const faqData = {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": allQuestions.map((q: any) => ({
+            "@type": "Question",
+            "name": q.question,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": q.answer.replace(/<[^>]*>/g, '') // Strip HTML for the schema
+            }
+          }))
+        }
+        faqScript.textContent = JSON.stringify(faqData)
+      }
     }).catch(err => {
       console.error("Public page load failed", err)
       setError(true)
@@ -55,9 +142,17 @@ const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
 
       {/* 2. Contenu de la page */}
       <div className="flex flex-col">
-        {page.schema.root.children.map((block: any) => (
-          <BlockRenderer key={block.id} node={block} mode="preview" />
-        ))}
+        {page.schema.root.children.map((block: any) => {
+          // Override local header/footer props with global settings
+          let finalBlock = block
+          if (block.type === 'header' && headerConfig) {
+            finalBlock = { ...block, props: { ...block.props, ...headerConfig } }
+          }
+          if (block.type === 'footer' && footerConfig) {
+            finalBlock = { ...block, props: { ...block.props, ...footerConfig } }
+          }
+          return <BlockRenderer key={block.id} node={finalBlock} mode="preview" />
+        })}
       </div>
 
       {/* 3. Footer Global si absent du schema */}

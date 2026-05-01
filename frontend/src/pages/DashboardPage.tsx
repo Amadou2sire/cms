@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react'
 import client from '../api/client'
 import { Link, useNavigate } from 'react-router-dom'
 import MenuEditor from '../builder/components/MenuEditor'
-import { Plus, FileText, Globe, Search, Copy, Edit3, Trash, Settings, Menu, Upload } from 'lucide-react'
+import { Plus, FileText, Globe, Search, Copy, Edit3, Trash, Settings, Menu, Upload, Newspaper } from 'lucide-react'
 
 interface Page {
   id: string
   title: string
   slug: string
   status: string
-  is_home: bool
+  is_home: boolean
   updated_at: string
 }
 
@@ -34,6 +34,7 @@ const DashboardPage: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [headerConfig, setHeaderConfig] = useState<any>(null)
   const [footerConfig, setFooterConfig] = useState<any>(null)
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
   const navigate = useNavigate()
 
   const fetchPages = async () => {
@@ -112,10 +113,10 @@ const DashboardPage: React.FC = () => {
         client.put('/settings/footer', footerConfig)
       ])
       setShowSettings(false)
-      alert("Paramètres mis à jour !")
+      setNotification({ message: "Paramètres mis à jour !", type: 'success' })
     } catch (err) {
       console.error(err)
-      alert("Erreur lors de la mise à jour")
+      setNotification({ message: "Erreur lors de la mise à jour", type: 'error' })
     }
   }
 
@@ -212,6 +213,12 @@ const DashboardPage: React.FC = () => {
             >
               <Menu size={16} className="text-blue-500" /> Navigation & Footer
             </button>
+            <Link 
+              to="/dashboard/articles"
+              className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all"
+            >
+              <Newspaper size={16} className="text-orange-500" /> Actualités
+            </Link>
             <button 
               onClick={handleCreatePage}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all"
@@ -638,6 +645,33 @@ const DashboardPage: React.FC = () => {
                  Enregistrer Globalement
                </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {notification && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-neutral-900 border border-neutral-800 p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center transform animate-in zoom-in-95 duration-300">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 ${notification.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+              {notification.type === 'success' ? (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+              ) : (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+              )}
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tighter mb-2">{notification.type === 'success' ? 'Félicitations !' : 'Oups !'}</h3>
+            <p className="text-neutral-500 text-sm font-medium mb-10 leading-relaxed">{notification.message}</p>
+            <button 
+              onClick={() => setNotification(null)}
+              className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg ${
+                notification.type === 'success' 
+                ? 'bg-green-600 hover:bg-green-500 shadow-green-900/20' 
+                : 'bg-red-600 hover:bg-red-500 shadow-red-900/20'
+              }`}
+            >
+              Continuer
+            </button>
           </div>
         </div>
       )}

@@ -1,9 +1,10 @@
 import React from 'react'
-import { useSeoStore } from './store/seoStore'
+import { useBuilderStore } from './store/builderStore'
 
 const SeoPanel: React.FC = () => {
-  const seo = useSeoStore()
-  const updateSeo = useSeoStore((state) => state.updateSeo)
+  const page = useBuilderStore((state) => state.page)
+  const updateSeo = useBuilderStore((state) => state.updateSeo)
+  const seo = page?.schema.seo || {}
 
   return (
     <div className="space-y-6">
@@ -17,7 +18,7 @@ const SeoPanel: React.FC = () => {
           <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">Meta Title</label>
           <input
             type="text"
-            value={seo.metaTitle}
+            value={seo.metaTitle || ''}
             onChange={(e) => updateSeo({ metaTitle: e.target.value })}
             className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
           />
@@ -26,7 +27,7 @@ const SeoPanel: React.FC = () => {
         <div className="space-y-2">
           <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">Meta Description</label>
           <textarea
-            value={seo.metaDescription}
+            value={seo.metaDescription || ''}
             onChange={(e) => updateSeo({ metaDescription: e.target.value })}
             className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none min-h-[100px] resize-none"
           />
@@ -36,7 +37,7 @@ const SeoPanel: React.FC = () => {
           <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">Canonical URL</label>
           <input
             type="text"
-            value={seo.canonical}
+            value={seo.canonical || ''}
             onChange={(e) => updateSeo({ canonical: e.target.value })}
             className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none"
           />
@@ -46,7 +47,7 @@ const SeoPanel: React.FC = () => {
           <label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">No Index</label>
           <input
             type="checkbox"
-            checked={seo.noIndex}
+            checked={!!seo.noIndex}
             onChange={(e) => updateSeo({ noIndex: e.target.checked })}
             className="w-4 h-4 rounded border-neutral-800 bg-neutral-900"
           />

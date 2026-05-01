@@ -4,6 +4,10 @@ import DashboardPage from './pages/DashboardPage'
 import BuilderLayout from './builder/BuilderLayout'
 import PreviewPage from './pages/PreviewPage'
 import PublicPage from './pages/PublicPage'
+import ArticlesPage from './pages/ArticlesPage'
+import ArticleEditPage from './pages/ArticleEditPage'
+import ArticleDetailPage from './pages/ArticleDetailPage'
+import NewsListingPage from './pages/NewsListingPage'
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const token = localStorage.getItem('token')
@@ -22,6 +26,18 @@ function App() {
         <Route path="/dashboard" element={
           <ProtectedRoute><DashboardPage /></ProtectedRoute>
         } />
+
+        <Route path="/dashboard/articles" element={
+          <ProtectedRoute><ArticlesPage /></ProtectedRoute>
+        } />
+
+        <Route path="/dashboard/articles/new" element={
+          <ProtectedRoute><ArticleEditPage /></ProtectedRoute>
+        } />
+
+        <Route path="/dashboard/articles/edit/:id" element={
+          <ProtectedRoute><ArticleEditPage /></ProtectedRoute>
+        } />
         
         <Route path="/builder/:id" element={
           <ProtectedRoute><BuilderLayout /></ProtectedRoute>
@@ -32,6 +48,8 @@ function App() {
         } />
         
         {/* Public Routes */}
+        <Route path="/actualites" element={<NewsListingPage />} />
+        <Route path="/articles/:slug" element={<ArticleDetailPage />} />
         <Route path="/:slug" element={<PublicPage />} />
         <Route path="/" element={<PublicPage isHome={true} />} />
       </Routes>

@@ -39,6 +39,8 @@ interface BuilderState {
   addBlock: (parentId: string | null, type: string, position?: number) => void
   moveBlock: (blockId: string, targetParentId: string | null, position: number) => void
   updateProps: (blockId: string, props: Record<string, any>) => void
+  updateSeo: (seo: Record<string, any>) => void
+  updateGeo: (geo: Record<string, any>) => void
   deleteBlock: (blockId: string) => void
 }
 
@@ -141,6 +143,26 @@ export const useBuilderStore = create<BuilderState>((set) => ({
       }
 
       updateNode(newPage.schema.root)
+      return { page: newPage, past: newPast, future: [], isDirty: true }
+    })
+  },
+
+  updateSeo: (seo) => {
+    set((state) => {
+      if (!state.page) return state
+      const newPast = [...state.past, JSON.parse(JSON.stringify(state.page))]
+      const newPage = JSON.parse(JSON.stringify(state.page))
+      newPage.schema.seo = { ...newPage.schema.seo, ...seo }
+      return { page: newPage, past: newPast, future: [], isDirty: true }
+    })
+  },
+
+  updateGeo: (geo) => {
+    set((state) => {
+      if (!state.page) return state
+      const newPast = [...state.past, JSON.parse(JSON.stringify(state.page))]
+      const newPage = JSON.parse(JSON.stringify(state.page))
+      newPage.schema.geo = { ...newPage.schema.geo, ...geo }
       return { page: newPage, past: newPast, future: [], isDirty: true }
     })
   },

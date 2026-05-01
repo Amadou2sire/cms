@@ -46,3 +46,19 @@ class SiteSettings(Base):
     header_config = Column(JSON, nullable=False, server_default='{}')
     footer_config = Column(JSON, nullable=False, server_default='{}')
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class Article(Base):
+    __tablename__ = "articles"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String(255), nullable=False)
+    image_url = Column(String(500), nullable=True)
+    content = Column(Text, nullable=False, default="")
+    slug = Column(String(255), unique=True, index=True, nullable=True)
+    meta_title = Column(String(255), nullable=True)
+    meta_description = Column(Text, nullable=True)
+    category = Column(String(100), nullable=True, server_default='News')
+    status = Column(String(50), nullable=False, default="draft")  # 'draft' | 'published'
+    created_by = Column(Uuid(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
