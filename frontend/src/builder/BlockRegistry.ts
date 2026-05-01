@@ -4,7 +4,7 @@ export interface PropDefinition {
   label: string
   default: any
   options?: string[]
-  itemSchema?: Record<string, Omit<PropDefinition, 'itemSchema'>>
+  itemSchema?: Record<string, PropDefinition>
 }
 
 export interface BlockDefinition {
@@ -32,13 +32,10 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     },
     propSchema: {
       text:  { type: 'string', label: 'Texte', default: 'Nouveau titre' },
-      level: { type: 'select', label: 'Niveau', default: 1, options: ['1','2','3','4','5','6'] },
-      color: { type: 'color',  label: 'Couleur', default: '#111111' },
+      level: { type: 'select', label: 'Niveau (1-6)', default: 2, options: ['1','2','3','4','5','6'] },
+      color: { type: 'color',  label: 'Couleur', default: '#171717' },
       align: { type: 'select', label: 'Alignement', default: 'left', options: ['left','center','right'] },
-      weight: { type: 'select', label: 'Graisse', default: '700', options: ['300','400','500','600','700','800','900'] },
-      lineHeight: { type: 'select', label: 'Interligne', default: '1.2', options: ['1','1.2','1.4','1.6'] },
-      letterSpacing: { type: 'select', label: 'Espacement lettres', default: '0px', options: ['-2px','-1px','0px','1px','2px','4px'] },
-      margin: { type: 'spacing', label: 'Marges (T R B L)', default: '0px 0px 0px 0px' },
+      showUnderline: { type: 'select', label: 'Ligne de soulignement', default: 'false', options: ['false', 'true'] },
       padding: { type: 'spacing', label: 'Padding (T R B L)', default: '0px 0px 0px 0px' },
     }
   },
@@ -615,6 +612,73 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       buttonLabel: { type: 'string', label: 'Texte Bouton', default: 'Envoyer' },
       bg: { type: 'color', label: 'Fond', default: '#ffffff' },
       padding: { type: 'spacing', label: 'Padding', default: '100px 48px 100px 48px' }
+    }
+  },
+  mission_vision: {
+    type: 'mission_vision',
+    label: 'Missions & Vision',
+    icon: 'Target',
+    canHaveChildren: false,
+    defaultProps: {
+      title: 'Notre Engagement',
+      missionTitle: 'Notre Mission',
+      missionText: 'Garantir une excellence industrielle constante à travers des solutions de fonderie innovantes, tout en respectant les normes de qualité les plus strictes pour nos partenaires internationaux.',
+      visionTitle: 'Notre Vision',
+      visionText: 'Devenir le leader incontournable de la fonderie de précision en Afrique et en Europe, porté par une transition technologique durable et une culture de l\'excellence.',
+      bg: '#f8f9fa',
+      padding: '100px 48px 100px 48px'
+    },
+    propSchema: {
+      title: { type: 'string', label: 'Titre Général', default: 'Notre Engagement' },
+      missionTitle: { type: 'string', label: 'Titre Mission', default: 'Notre Mission' },
+      missionText: { type: 'string', label: 'Texte Mission', default: '...' },
+      visionTitle: { type: 'string', label: 'Titre Vision', default: 'Notre Vision' },
+      visionText: { type: 'string', label: 'Texte Vision', default: '...' },
+      bg: { type: 'color', label: 'Fond', default: '#f8f9fa' },
+      padding: { type: 'spacing', label: 'Padding', default: '100px 48px 100px 48px' }
+    }
+  },
+  table: {
+    type: 'table',
+    label: 'Tableau de Données',
+    icon: 'Table',
+    canHaveChildren: false,
+    defaultProps: {
+      title: 'Spécifications Techniques',
+      headers: [{ value: 'Caractéristique' }, { value: 'Valeur' }, { value: 'Unité' }],
+      rows: [
+        { cols: [{ value: 'Densité' }, { value: '7.2' }, { value: 'g/cm³' }] },
+        { cols: [{ value: 'Température de fusion' }, { value: '1150' }, { value: '°C' }] },
+        { cols: [{ value: 'Dureté Brinell' }, { value: '180-220' }, { value: 'HB' }] }
+      ],
+      bg: '#ffffff',
+      padding: '80px 48px 80px 48px'
+    },
+    propSchema: {
+      title: { type: 'string', label: 'Titre du tableau', default: 'Spécifications' },
+      headers: { 
+        type: 'list', 
+        label: 'En-têtes', 
+        default: [],
+        itemSchema: {
+          value: { type: 'string', label: 'Nom colonne', default: 'Colonne' }
+        }
+      },
+      rows: {
+        type: 'list',
+        label: 'Lignes',
+        default: [],
+        itemSchema: {
+          cols: { 
+            type: 'list', 
+            label: 'Cellules (Colonnes)', 
+            default: [], 
+            itemSchema: { value: { type: 'string', label: 'Texte', default: '-' } } 
+          }
+        }
+      },
+      bg: { type: 'color', label: 'Fond', default: '#ffffff' },
+      padding: { type: 'spacing', label: 'Padding', default: '80px 48px 80px 48px' }
     }
   }
 };

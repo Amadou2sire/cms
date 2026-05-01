@@ -2,7 +2,7 @@ import React from 'react'
 import { type BlockNode } from './store/builderStore'
 import { useBuilderStore } from './store/builderStore'
 import { useDroppable } from '@dnd-kit/core'
-import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu, Newspaper, ArrowRight, Calendar, MessageCircle, Mail, Phone, MapPin, Send } from 'lucide-react'
+import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu, Newspaper, ArrowRight, Calendar, MessageCircle, Mail, Phone, MapPin, Send, Target, Eye, Table } from 'lucide-react'
 import client from '../api/client'
 
 const ICON_MAP: Record<string, any> = {
@@ -18,30 +18,43 @@ const ICON_MAP: Record<string, any> = {
 
 const HeadingBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
   const { 
-    text = 'Nouveau titre', 
-    level = 1, 
-    color = '#000000', 
-    align = 'left', 
-    weight = '700',
-    lineHeight = '1.2',
-    letterSpacing = '0px',
-    margin = '0', 
-    padding = '0' 
+    text = 'Titre', 
+    level = 2, 
+    align = 'left',
+    color = '#171717',
+    padding = '0px',
+    showUnderline = false
   } = node.props
+
   const Tag = `h${level}` as any
+
+  const getStyle = () => {
+    switch (Number(level)) {
+      case 1: return 'text-4xl md:text-7xl font-black uppercase tracking-tighter leading-none'
+      case 2: return 'text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight'
+      case 3: return 'text-2xl md:text-3xl font-black uppercase tracking-tight'
+      default: return 'text-xl font-bold uppercase tracking-widest'
+    }
+  }
+
   return (
-    <div style={{ margin, padding }}>
-      <Tag style={{ 
-        color, 
-        textAlign: align as any, 
-        fontWeight: weight,
-        lineHeight: lineHeight,
-        letterSpacing: letterSpacing,
-        margin: 0,
-        wordBreak: 'break-word'
-      }} className="text-dynamic-heading">
+    <div style={{ padding, textAlign: align as any }} className="w-full">
+      <Tag 
+        style={{ color }} 
+        className={`${getStyle()} transition-all duration-300`}
+      >
         {text}
       </Tag>
+      {showUnderline === 'true' && (
+        <div 
+          className="h-1.5 bg-red-600 mt-6 rounded-full transition-all duration-500"
+          style={{ 
+            width: '80px', 
+            marginLeft: align === 'center' ? 'auto' : '0', 
+            marginRight: align === 'center' ? 'auto' : '0' 
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -1101,7 +1114,7 @@ const FAQBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ nod
           )}
         </header>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {items.map((item: any, idx: number) => (
             <div 
               key={idx} 
@@ -1111,7 +1124,7 @@ const FAQBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ nod
             >
               <button
                 onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                className="w-full flex items-center justify-between p-6 md:p-8 text-left group"
+                className="w-full flex items-center justify-between py-4 md:py-5 px-6 md:px-8 text-left group"
               >
                 <div className="flex items-center gap-6">
                   <span className={`text-[10px] font-black transition-colors ${openIndex === idx ? 'text-red-600' : 'text-neutral-300'}`}>
@@ -1254,6 +1267,158 @@ const ContactBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({
   )
 }
 
+const MissionVisionBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { 
+    title = 'Notre Engagement',
+    missionTitle = 'Notre Mission',
+    missionText = '',
+    visionTitle = 'Notre Vision',
+    visionText = '',
+    bg = '#f8f9fa',
+    padding = '100px 48px'
+  } = node.props
+
+  return (
+    <section style={{ backgroundColor: bg, padding }} className="w-full font-['Inter',sans-serif] overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        {title && (
+          <div className="text-center mb-12 md:mb-20">
+            <h1 className="text-3xl md:text-6xl font-black text-neutral-900 uppercase tracking-tighter leading-none px-4 md:px-0">
+              {title}
+            </h1>
+            <div className="w-16 md:w-24 h-1.5 bg-red-600 mx-auto mt-6 md:mt-8 rounded-full" />
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-16">
+          {/* Mission Card */}
+          <div className="group bg-white p-8 sm:p-10 md:p-12 lg:p-16 rounded-3xl md:rounded-[3rem] border border-neutral-100 shadow-xl shadow-neutral-200/50 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-700 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-red-500/5 rounded-full -mr-12 -mt-12 md:-mr-16 md:-mt-16 group-hover:scale-150 transition-transform duration-700" />
+            
+            <div className="w-14 h-14 md:w-16 md:h-16 bg-red-600 rounded-xl md:rounded-2xl flex items-center justify-center text-white mb-8 md:mb-10 shadow-lg shadow-red-200 group-hover:rotate-6 transition-transform">
+              <Target size={28} className="md:w-8 md:h-8" />
+            </div>
+            
+            <h3 className="text-2xl md:text-3xl font-black text-neutral-900 uppercase tracking-tighter mb-4 md:mb-6 relative z-10">
+              {missionTitle}
+            </h3>
+            <p className="text-neutral-500 text-base md:text-lg leading-relaxed font-medium relative z-10">
+              {missionText}
+            </p>
+          </div>
+
+          {/* Vision Card */}
+          <div className="group bg-neutral-900 p-8 sm:p-10 md:p-12 lg:p-16 rounded-3xl md:rounded-[3rem] border border-neutral-800 shadow-2xl hover:shadow-blue-500/10 transition-all duration-700 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-blue-500/5 rounded-full -mr-12 -mt-12 md:-mr-16 md:-mt-16 group-hover:scale-150 transition-transform duration-700" />
+            
+            <div className="w-14 h-14 md:w-16 md:h-16 bg-blue-600 rounded-xl md:rounded-2xl flex items-center justify-center text-white mb-8 md:mb-10 shadow-lg shadow-blue-900/50 group-hover:-rotate-6 transition-transform">
+              <Eye size={28} className="md:w-8 md:h-8" />
+            </div>
+            
+            <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter mb-4 md:mb-6 relative z-10">
+              {visionTitle}
+            </h3>
+            <p className="text-neutral-400 text-base md:text-lg leading-relaxed font-medium relative z-10">
+              {visionText}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const TableBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { 
+    title = 'Spécifications',
+    headers = [],
+    rows = [],
+    bg = '#ffffff',
+    padding = '80px 48px'
+  } = node.props
+
+  const headerList = Array.isArray(headers) ? headers : []
+  const rowList = Array.isArray(rows) ? rows : []
+
+  return (
+    <section style={{ backgroundColor: bg, padding }} className="w-full font-['Inter',sans-serif] overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        {title && (
+          <div className="mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-neutral-900 uppercase tracking-tighter leading-none">
+              {title}
+            </h2>
+            <div className="w-20 h-1.5 bg-red-600 mt-6 rounded-full" />
+          </div>
+        )}
+
+        <div className="relative">
+          {/* Mobile Scroll Hint */}
+          <div className="md:hidden flex justify-end mb-4">
+            <div className="bg-neutral-900/5 px-4 py-1.5 rounded-full flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Glisser pour voir</span>
+              <ArrowRight size={12} className="text-red-500" />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto custom-scrollbar rounded-3xl md:rounded-[2.5rem] border border-neutral-100 shadow-2xl shadow-neutral-200/40 bg-white">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gradient-to-r from-neutral-950 to-neutral-900 text-white">
+                  {headerList.map((header: any, i: number) => (
+                    <th key={i} className="px-6 md:px-12 py-6 md:py-8 text-left text-[11px] md:text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap border-r border-white/5 last:border-none">
+                      {typeof header === 'object' ? (header.value || '-') : header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rowList.map((row: any, ri: number) => (
+                  <tr 
+                    key={ri} 
+                    className={`group border-b border-neutral-100 transition-all duration-300 hover:bg-red-50/30 last:border-none relative ${ri % 2 === 0 ? 'bg-white' : 'bg-neutral-50/40'}`}
+                  >
+                    {(row.cols || []).map((col: any, ci: number) => (
+                      <td key={ci} className="px-6 md:px-12 py-6 md:py-8 relative align-middle">
+                        {/* Hover Accent Line */}
+                        {ci === 0 && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-600 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center" />
+                        )}
+                        
+                        <span className={`
+                          ${ci === 0 ? 'font-bold text-neutral-900 uppercase tracking-wide text-sm md:text-base' : 'font-medium text-neutral-500 text-sm md:text-base leading-relaxed'}
+                          block transition-colors duration-300 group-hover:text-neutral-900
+                        `}>
+                          {typeof col === 'object' ? (col.value || '-') : col}
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e5e5e5;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #ef4444;
+        }
+      `}</style>
+    </section>
+  )
+}
+
 const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = ({ node, mode = 'edit' }) => {
   const selectBlock = useBuilderStore((state) => state.selectBlock)
   const deleteBlock = useBuilderStore((state) => state.deleteBlock)
@@ -1282,6 +1447,8 @@ const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = 
     news: (props) => <NewsBlock {...props} />,
     faq: (props) => <FAQBlock {...props} />,
     contact: (props) => <ContactBlock {...props} />,
+    mission_vision: (props) => <MissionVisionBlock {...props} />,
+    table: (props) => <TableBlock {...props} />,
   }
 
   const Component = COMPONENTS[node.type]
