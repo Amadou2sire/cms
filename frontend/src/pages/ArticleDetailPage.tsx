@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import client from '../api/client'
 import { ArrowLeft, Calendar, Newspaper } from 'lucide-react'
 import BlockRenderer from '../builder/BlockRenderer'
+import { useProject } from '../contexts/ProjectContext'
 
 interface Article {
   id: string
@@ -13,28 +14,74 @@ interface Article {
   created_at: string
 }
 
+const sanitizeHtmlContent = (content: string) =>
+  content
+    .replace(/\u00A0/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\u00AD/g, '')
+
 const ArticleDetailPage: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>()
+  const { slug, lang } = useParams<{ slug: string; lang?: string }>()
+  const { defaultLanguage } = useProject()
+  const effectiveLang = lang || defaultLanguage
   const [article, setArticle] = useState<Article | null>(null)
   const [otherArticles, setOtherArticles] = useState<Article[]>([])
   const [headerConfig, setHeaderConfig] = useState<any>(null)
   const [footerConfig, setFooterConfig] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isModular, setIsModular] = useState(false)
+  const [blocks, setBlocks] = useState<any[]>([])
 
   useEffect(() => {
     const fetchArticleAndSettings = async () => {
       try {
         const [articleRes, allRes, settingsRes] = await Promise.all([
-          client.get(`/articles/public/slug/${slug}/`),
-          client.get('/articles/public/'),
-          client.get('/settings')
+          client.get(`/articles/public/slug/${slug}/?lang=${effectiveLang}`),
+          client.get(`/articles/public/?lang=${effectiveLang}`),
+          client.get('/settings/')
         ])
         
-        setArticle(articleRes.data)
-        // Filter out current article and limit to 3
-        const others = allRes.data
-          .filter((a: Article) => a.slug !== slug)
-          .slice(0, 3)
+        const rawContent = articleRes.data.content || ''
+        let parsedBlocks = null
+        let relatedArticleIds: string[] = []
+        try {
+          const trimmed = rawContent.trim()
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            const parsed = JSON.parse(trimmed)
+            if (parsed && parsed.version === 2 && Array.isArray(parsed.blocks)) {
+              parsedBlocks = parsed.blocks
+              relatedArticleIds = Array.isArray(parsed.related_article_ids) ? parsed.related_article_ids : []
+            }
+          }
+        } catch (e) {
+          // not JSON
+        }
+
+        if (parsedBlocks) {
+          setIsModular(true)
+          setBlocks(parsedBlocks)
+          setArticle(articleRes.data)
+        } else {
+          setIsModular(false)
+          setBlocks([])
+          setArticle({
+            ...articleRes.data,
+            content: sanitizeHtmlContent(rawContent)
+          })
+        }
+
+        // Selected related articles or automatic fallback
+        let others: Article[] = []
+        if (relatedArticleIds.length > 0) {
+          others = relatedArticleIds
+            .map((recId: string) => allRes.data.find((a: Article) => a.id === recId))
+            .filter((a: Article | undefined): a is Article => a !== undefined && a.slug !== slug)
+            .slice(0, 4)
+        } else {
+          others = allRes.data
+            .filter((a: Article) => a.slug !== slug)
+            .slice(0, 3)
+        }
         setOtherArticles(others)
         setHeaderConfig(settingsRes.data.header_config)
         setFooterConfig(settingsRes.data.footer_config)
@@ -104,14 +151,16 @@ const ArticleDetailPage: React.FC = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         
-        .prose {
+        .prose,
+        .prose * {
           font-family: 'Inter', sans-serif;
-          overflow-wrap: break-word;
-          word-break: normal;
+          overflow-wrap: break-word !important;
+          word-break: normal !important;
           line-height: 1.8;
           font-size: 1.1rem;
-          hyphens: auto;
-          -webkit-hyphens: auto;
+          /* Disable automatic hyphenation and avoid unexpected cuts */
+          hyphens: none !important;
+          -webkit-hyphens: none !important;
         }
         .ql-align-center { text-align: center; }
         .ql-align-right { text-align: right; }
@@ -125,6 +174,10 @@ const ArticleDetailPage: React.FC = () => {
           letter-spacing: -0.02em;
           color: #000;
           line-height: 1.2;
+          /* Prevent breaking inside words for headings */
+          word-break: normal;
+          overflow-wrap: break-word;
+          hyphens: none;
         }
 
         @media (max-width: 768px) {
@@ -170,6 +223,27 @@ const ArticleDetailPage: React.FC = () => {
           font-weight: 900;
           color: #000;
         }
+        .prose table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 2rem 0;
+          overflow-x: auto;
+          display: table;
+        }
+        .prose th,
+        .prose td {
+          border: 1px solid #d1d5db;
+          padding: 1rem 1.15rem;
+          text-align: left;
+          vertical-align: top;
+        }
+        .prose th {
+          background: #f8fafc;
+          font-weight: 700;
+        }
+        .prose tr:nth-child(even) td {
+          background: #f9fafb;
+        }
       `}</style>
 
       {/* Global Header */}
@@ -214,10 +288,36 @@ const ArticleDetailPage: React.FC = () => {
         </div>
 
         {/* 3. Article Content */}
-        <div 
-          className="prose prose-lg md:prose-xl prose-neutral max-w-none"
-          dangerouslySetInnerHTML={{ __html: article.content }}
-        />
+        {isModular ? (
+          <div className="space-y-12">
+            {blocks.map((block) => {
+              if (block.type === 'richtext') {
+                return (
+                  <div 
+                    key={block.id}
+                    className="prose prose-lg md:prose-xl prose-neutral max-w-none"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(block.data.html || '') }}
+                  />
+                )
+              } else {
+                return (
+                  <div key={block.id} className="w-full">
+                    <BlockRenderer 
+                      node={{ id: block.id, type: block.type, props: block.data, children: [] }} 
+                      mode="preview"
+                      lang={effectiveLang}
+                    />
+                  </div>
+                )
+              }
+            })}
+          </div>
+        ) : (
+          <div 
+            className="prose prose-lg md:prose-xl prose-neutral max-w-none"
+            dangerouslySetInnerHTML={{ __html: article.content }}
+          />
+        )}
 
         {/* 4. Lire aussi Section */}
         {otherArticles.length > 0 && (
@@ -226,11 +326,17 @@ const ArticleDetailPage: React.FC = () => {
               <span className="text-sm font-black uppercase tracking-[0.4em] text-neutral-900">Lire aussi</span>
               <div className="flex-1 h-[1px] bg-neutral-100" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className={`grid grid-cols-1 ${
+              otherArticles.length === 4 
+                ? 'md:grid-cols-4' 
+                : otherArticles.length === 2 
+                ? 'md:grid-cols-2' 
+                : 'md:grid-cols-3'
+            } gap-8`}>
               {otherArticles.map((other) => (
                 <Link 
                   key={other.id} 
-                  to={`/articles/${other.slug}`}
+                  to={`/${effectiveLang}/articles/${other.slug}`}
                   className="group block space-y-4 no-underline"
                 >
                   <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-neutral-50 shadow-sm border border-neutral-100">

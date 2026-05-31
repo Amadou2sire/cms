@@ -61,3 +61,5 @@ backend/app/static/media/*
 # Logs
 logs/
 *.log
+test_nim.py
+ROADMAP.md

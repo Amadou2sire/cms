@@ -1,15 +1,18 @@
-import React, { useState } from 'react'
-import { useBuilderStore, type BlockNode } from './store/builderStore'
+import React, { useEffect, useState } from 'react'
+import { useBuilderStore, getLocalizedValue, type BlockNode } from './store/builderStore'
 import { BLOCK_REGISTRY, type PropDefinition } from './BlockRegistry'
 import SeoPanel from './SeoPanel'
 import GeoPanel from './GeoPanel'
 import client from '../api/client'
+import { useProject } from '../contexts/ProjectContext'
 
 const PropsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'props' | 'seo' | 'geo'>('props')
   const selectedId = useBuilderStore((state) => state.selectedId)
   const page = useBuilderStore((state) => state.page)
   const updateProps = useBuilderStore((state) => state.updateProps)
+  const currentLang = useBuilderStore((state) => state.currentLang)
+  const { defaultLanguage } = useProject()
 
   const findBlock = (node: BlockNode, id: string): BlockNode | null => {
     if (node.id === id) return node
@@ -20,10 +23,73 @@ const PropsPanel: React.FC = () => {
     return null
   }
 
+  const [globalComponents, setGlobalComponents] = useState<{ id: string; name: string }[]>([])
   const selectedBlock = selectedId && page ? findBlock(page.schema.root, selectedId) : null
   const definition = selectedBlock ? BLOCK_REGISTRY[selectedBlock.type] : null
 
+  useEffect(() => {
+    const fetchGlobalComponents = async () => {
+      try {
+        const res = await client.get('/components/')
+        setGlobalComponents(res.data.map((comp: any) => ({ id: comp.id, name: comp.name })))
+      } catch (err) {
+        console.error('Impossible de charger les composants globaux', err)
+      }
+    }
+
+    if (selectedBlock?.type === 'globalComponent') {
+      fetchGlobalComponents()
+    }
+  }, [selectedBlock?.type])
+
+  /** Get the display value respecting i18n */
+  const getFieldValue = (key: string, props: PropDefinition): any => {
+    if (!selectedBlock) return ''
+    if (props.i18n && currentLang !== defaultLanguage) {
+      return getLocalizedValue(selectedBlock.props, key, currentLang)
+    }
+    return selectedBlock.props[key]
+  }
+
+  /** Handle change, storing in i18n if needed */
+  const handleFieldChange = (key: string, prop: PropDefinition, val: any) => {
+    if (!selectedId) return
+    if (prop.i18n && currentLang !== defaultLanguage) {
+      const i18n = { ...(selectedBlock?.props?.i18n || {}) }
+      if (!i18n[currentLang]) i18n[currentLang] = {}
+      i18n[currentLang] = { ...i18n[currentLang], [key]: val }
+      updateProps(selectedId, { i18n })
+    } else {
+      updateProps(selectedId, { [key]: val })
+    }
+  }
+
   const renderField = (key: string, prop: PropDefinition, value: any, onChange: (val: any) => void) => {
+    if (key === 'componentId' && selectedBlock?.type === 'globalComponent') {
+      return (
+        <div className="space-y-3">
+          <select
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none transition-all"
+          >
+            <option value="">Sélectionnez un composant global</option>
+            {globalComponents.map((comp) => (
+              <option key={comp.id} value={comp.id}>{comp.name}</option>
+            ))}
+          </select>
+          <div className="text-[10px] text-neutral-500">Si vous souhaitez utiliser un ID personnalisé, saisissez-le ci-dessous.</div>
+          <input
+            type="text"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="ID du composant global"
+            className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none transition-all"
+          />
+        </div>
+      )
+    }
+
     switch (prop.type) {
       case 'string':
         return (
@@ -83,15 +149,28 @@ const PropsPanel: React.FC = () => {
           />
         )
       case 'media':
+        const isVideo = typeof value === 'string' && (
+          value.toLowerCase().endsWith('.mp4') || 
+          value.toLowerCase().endsWith('.webm') || 
+          value.toLowerCase().endsWith('.ogg') || 
+          value.toLowerCase().endsWith('.mov') ||
+          value.includes('/uploads/') && !value.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg|ico)$/)
+        )
         return (
           <div className="space-y-2">
-            {value && <img src={value} alt="Preview" className="w-full h-24 object-cover rounded border border-neutral-800" />}
+            {value && (
+              isVideo ? (
+                <video src={value} className="w-full h-24 object-cover rounded border border-neutral-800" muted playsInline />
+              ) : (
+                <img src={value} alt="Preview" className="w-full h-24 object-cover rounded border border-neutral-800" />
+              )
+            )}
             <div className="flex gap-2">
               <input
                 type="text"
                 value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
-                placeholder="URL de l'image"
+                placeholder="URL du média"
                 className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs focus:border-blue-500 outline-none"
               />
               <label className="cursor-pointer bg-neutral-800 hover:bg-neutral-700 px-3 py-2 rounded text-[10px] font-bold flex items-center justify-center">
@@ -200,11 +279,16 @@ const PropsPanel: React.FC = () => {
                 <div className="space-y-6">
                   {definition && Object.entries(definition.propSchema).map(([key, prop]) => (
                     <div key={key} className="space-y-2">
-                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block flex items-center gap-2">
                         {prop.label}
+                        {prop.i18n && (
+                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 uppercase tracking-wider">
+                            {currentLang}
+                          </span>
+                        )}
                       </label>
-                      {renderField(key, prop, selectedBlock.props[key], (val) => {
-                        updateProps(selectedId!, { [key]: val })
+                      {renderField(key, prop, getFieldValue(key, prop), (val) => {
+                        handleFieldChange(key, prop, val)
                       })}
                     </div>
                   ))}

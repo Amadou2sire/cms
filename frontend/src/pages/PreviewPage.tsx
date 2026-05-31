@@ -15,14 +15,23 @@ const PreviewPage: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      Promise.all([
-        client.get(`/pages/${id}`),
-        client.get('/settings')
-      ]).then(([pageRes, settingsRes]) => {
-        setPage(pageRes.data)
-        setHeaderConfig(settingsRes.data.header_config)
-        setFooterConfig(settingsRes.data.footer_config)
+      // Determine if id is a UUID (page ID) or a preview token
+      const isUUID = id.includes('-') && id.length > 20
+      const pageRequest = isUUID
+        ? client.get(`/pages/${id}`)
+        : client.get(`/pages/preview/${id}`)
+
+      pageRequest.then(pageRes => {
+        const pageData = pageRes.data
+        setPage(pageData)
         setLoading(false)
+
+        if (pageData.project_id) {
+          client.get(`/settings/?project_id=${pageData.project_id}`).then(settingsRes => {
+            setHeaderConfig(settingsRes.data.header_config)
+            setFooterConfig(settingsRes.data.footer_config)
+          }).catch(err => console.error("Failed to load settings for preview", err))
+        }
       }).catch(err => {
         console.error("Preview load failed", err)
         setLoading(false)
@@ -76,15 +85,20 @@ const PreviewPage: React.FC = () => {
       <div className="w-full min-h-screen">
         {/* Render Global Header if not already in schema */}
         {page.schema.root.children.every(b => b.type !== 'header') && headerConfig && (
-          <BlockRenderer 
-            node={{ 
-              id: 'global-header', 
-              type: 'header', 
-              props: headerConfig, 
-              children: [] 
-            }} 
-            mode="preview" 
-          />
+          <>
+            <BlockRenderer 
+              node={{ 
+                id: 'global-header', 
+                type: 'header', 
+                props: headerConfig, 
+                children: [] 
+              }} 
+              mode="preview" 
+            />
+            {(headerConfig.sticky === 'true' || headerConfig.sticky === true) && (
+              <div style={{ height: '80px' }} />
+            )}
+          </>
         )}
         
         {page.schema.root.children.map((block) => {
@@ -96,7 +110,14 @@ const PreviewPage: React.FC = () => {
           if (block.type === 'footer' && footerConfig) {
             finalBlock = { ...block, props: { ...block.props, ...footerConfig } }
           }
-          return <BlockRenderer key={block.id} node={finalBlock} mode="preview" />
+          return (
+            <React.Fragment key={block.id}>
+              <BlockRenderer node={finalBlock} mode="preview" />
+              {block.type === 'header' && (headerConfig?.sticky === 'true' || headerConfig?.sticky === true) && (
+                <div style={{ height: '80px' }} />
+              )}
+            </React.Fragment>
+          )
         })}
 
         {/* Render Global Footer if not already in schema */}

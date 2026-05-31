@@ -26,11 +26,19 @@ interface BuilderState {
   page: PageData | null
   selectedId: string | null
   isDirty: boolean
-  
+
   // History
   past: PageData[]
   future: PageData[]
-  
+
+  // i18n
+  currentLang: string
+
+  // Settings
+  headerConfig: any
+  footerConfig: any
+  loadSettings: (headerConfig: any, footerConfig: any) => void
+
   // Actions
   undo: () => void
   redo: () => void
@@ -42,6 +50,15 @@ interface BuilderState {
   updateSeo: (seo: Record<string, any>) => void
   updateGeo: (geo: Record<string, any>) => void
   deleteBlock: (blockId: string) => void
+  setCurrentLang: (lang: string) => void
+}
+
+/**
+ * Get a localized value from a block's props.
+ * Reads `props.i18n?.[lang]?.[key]` first, falls back to `props[key]`.
+ */
+export function getLocalizedValue(props: Record<string, any>, key: string, lang: string): any {
+  return props?.i18n?.[lang]?.[key] ?? props?.[key]
 }
 
 export const useBuilderStore = create<BuilderState>((set) => ({
@@ -50,8 +67,40 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   isDirty: false,
   past: [],
   future: [],
+  currentLang: 'fr',
+  headerConfig: null,
+  footerConfig: null,
 
-  loadPage: (page) => set({ page, isDirty: false, past: [], future: [] }),
+  loadSettings: (headerConfig, footerConfig) => set((state) => {
+    if (!state.page) return { headerConfig, footerConfig }
+    const newPage = JSON.parse(JSON.stringify(state.page))
+    newPage.schema.root.children = newPage.schema.root.children.map((block: any) => {
+      if (block.type === 'header' && headerConfig) {
+        return { ...block, props: { ...block.props, ...headerConfig } }
+      }
+      if (block.type === 'footer' && footerConfig) {
+        return { ...block, props: { ...block.props, ...footerConfig } }
+      }
+      return block
+    })
+    return { headerConfig, footerConfig, page: newPage }
+  }),
+
+  loadPage: (page) => set((state) => {
+    const newPage = JSON.parse(JSON.stringify(page))
+    if (state.headerConfig || state.footerConfig) {
+      newPage.schema.root.children = newPage.schema.root.children.map((block: any) => {
+        if (block.type === 'header' && state.headerConfig) {
+          return { ...block, props: { ...block.props, ...state.headerConfig } }
+        }
+        if (block.type === 'footer' && state.footerConfig) {
+          return { ...block, props: { ...block.props, ...state.footerConfig } }
+        }
+        return block
+      })
+    }
+    return { page: newPage, isDirty: false, past: [], future: [] }
+  }),
   
   undo: () => set((state) => {
     if (state.past.length === 0 || !state.page) return state
@@ -80,15 +129,20 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   selectBlock: (id) => set({ selectedId: id }),
 
   addBlock: (parentId, type, position) => {
-    const defaultProps = BLOCK_REGISTRY[type]?.defaultProps ?? {}
-    const newBlock: BlockNode = {
-      id: uuidv4(),
-      type,
-      props: { ...defaultProps },
-      children: []
-    }
-
     set((state) => {
+      const defaultProps = type === 'header' && state.headerConfig
+        ? state.headerConfig
+        : type === 'footer' && state.footerConfig
+        ? state.footerConfig
+        : BLOCK_REGISTRY[type]?.defaultProps ?? {}
+
+      const newBlock: BlockNode = {
+        id: uuidv4(),
+        type,
+        props: { ...defaultProps },
+        children: []
+      }
+
       if (!state.page) return state
       
       const newPast = [...state.past, JSON.parse(JSON.stringify(state.page))]
@@ -199,5 +253,7 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   moveBlock: (_blockId, _targetParentId, _position) => {
     // Complex implementation for another time or simplified here
     // For now, let's keep it simple or implement as needed
-  }
+  },
+
+  setCurrentLang: (lang) => set({ currentLang: lang })
 }))

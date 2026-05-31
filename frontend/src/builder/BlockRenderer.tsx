@@ -2,8 +2,17 @@ import React from 'react'
 import { type BlockNode } from './store/builderStore'
 import { useBuilderStore } from './store/builderStore'
 import { useDroppable } from '@dnd-kit/core'
-import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu, Newspaper, ArrowRight, Calendar, MessageCircle, Mail, Phone, MapPin, Send, Target, Eye, Table } from 'lucide-react'
+import { useProject } from '../contexts/ProjectContext'
+import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu, Newspaper, ArrowRight, Calendar, MessageCircle, Mail, Phone, MapPin, Send, Target, Eye, Table, Globe } from 'lucide-react'
 import client from '../api/client'
+
+/** Prefix a relative URL with the language code if not already prefixed. */
+function normalizeHref(href: string, lang: string): string {
+  if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return href
+  if (/^\/[a-z]{2}(\/|$)/.test(href)) return href
+  const path = href.startsWith('/') ? href : `/${href}`
+  return `/${lang}${path}`
+}
 
 const ICON_MAP: Record<string, any> = {
   Monitor,
@@ -238,6 +247,7 @@ const BannerBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
 const HeroBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
   const {
     bgImage = '',
+    bgVideo = '',
     overlayOpacity = '0.6',
     title = 'Titre Hero',
     subtitle = 'Sous-titre',
@@ -246,7 +256,7 @@ const HeroBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ no
     primaryBtnHref = '#',
     secondaryBtnText = 'Bouton 2',
     secondaryBtnHref = '#',
-    height = '80vh',
+    height = '100vh',
     textAlign = 'left'
   } = node.props
 
@@ -260,19 +270,33 @@ const HeroBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ no
     <div 
       className={`relative w-full overflow-hidden flex flex-col justify-center ${alignStyles[textAlign as keyof typeof alignStyles]}`}
       style={{ 
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
         minHeight: height,
         padding: '5% 10%'
       }}
     >
+      {/* Background Media */}
+      {bgVideo ? (
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src={bgVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : bgImage ? (
+        <div 
+          className="absolute inset-0 bg-cover bg-center z-0"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        />
+      ) : null}
+
       <div 
-        className="absolute inset-0 bg-black z-0" 
+        className="absolute inset-0 bg-black z-10" 
         style={{ opacity: parseFloat(overlayOpacity) }}
       />
       
-      <div className="relative z-10 max-w-4xl space-y-6">
+      <div className="relative z-20 max-w-4xl space-y-6">
         {subtitle && (
           <p className="text-[#e5482d] font-black uppercase tracking-[0.2em] text-sm md:text-base animate-in fade-in slide-in-from-bottom-4 duration-700">
             {subtitle}
@@ -764,6 +788,7 @@ const LabBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ nod
 }
 
 const NewsBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { defaultLanguage } = useProject()
   const {
     title = 'Dernières Actualités',
     accentText = 'NEWSROOM',
@@ -830,7 +855,7 @@ const NewsBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ no
             articles.map((article, idx) => (
               <a 
                 key={article.id} 
-                href={`/articles/${article.slug || article.id}`}
+                href={normalizeHref(`/articles/${article.slug || article.id}`, defaultLanguage)}
                 className="group flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-8 duration-700 no-underline"
                 style={{ transitionDelay: `${idx * 150}ms` }}
               >
@@ -878,18 +903,20 @@ const NewsBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ no
   )
 }
 
-const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node, mode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
-  const { 
-    logo = '', 
-    logoHeight = '40px', 
-    bg = '#ffffff', 
+  const { defaultLanguage } = useProject()
+  const {
+    logo = '',
+    logoHeight = '40px',
+    alignMenu = 'left',
+    bg = '#ffffff',
     textColor = '#000000',
     btnBg = '#2563eb',
     btnColor = '#ffffff',
-    sticky = 'true', 
-    menuItems = [], 
-    buttonLabel = '', 
+    sticky = 'true',
+    menuItems = [],
+    buttonLabel = '',
     buttonHref = '#',
     padding = '16px 48px'
   } = node.props
@@ -898,8 +925,8 @@ const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
     const hasChildren = item.children && item.children.length > 0
     return (
       <div key={item.label} className="relative group/item">
-        <a 
-          href={item.href} 
+        <a
+          href={normalizeHref(item.href, defaultLanguage)}
           style={{ color: level > 0 ? '#374151' : textColor }}
           className={`flex items-center gap-1 py-2 px-3 text-sm font-medium transition-colors hover:opacity-70`}
         >
@@ -920,8 +947,8 @@ const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
     const hasChildren = item.children && item.children.length > 0
     return (
       <div key={item.label} className="w-full">
-        <a 
-          href={item.href} 
+        <a
+          href={normalizeHref(item.href, defaultLanguage)}
           style={{ color: textColor }}
           className={`flex items-center justify-between py-3 text-lg font-bold border-b border-neutral-100`}
           onClick={() => !hasChildren && setMobileMenuOpen(false)}
@@ -940,27 +967,40 @@ const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
 
   return (
     <header 
-      style={{ backgroundColor: bg, position: sticky === 'true' ? 'sticky' : 'relative', top: 0, zIndex: 100 }}
+      style={{ backgroundColor: bg, position: (mode !== 'edit' && (sticky === 'true' || sticky === true)) ? 'fixed' : 'relative', top: 0, left: 0, right: 0, zIndex: 100 }}
       className="w-full shadow-sm"
     >
       <div 
         style={{ padding }}
-        className="flex items-center justify-between mx-auto"
+        className="flex items-center justify-between mx-auto w-full relative"
       >
-        <div className="flex items-center gap-12">
-          <a href="/" className="hover:opacity-80 transition-opacity">
-            <img src={logo} alt="Logo" style={{ height: logoHeight }} className="max-w-[150px] object-contain" />
+        {/* Logo */}
+        <div className="flex items-center shrink-0">
+          <a href={normalizeHref('/', defaultLanguage)} className="hover:opacity-80 transition-opacity">
+            {logo ? (
+              <img src={logo} alt="Logo" style={{ height: logoHeight }} className="max-w-[150px] object-contain" />
+            ) : (
+              <span className="text-xl font-bold tracking-tight" style={{ color: textColor }}>Logo</span>
+            )}
           </a>
-          
-          <nav className="hidden lg:flex items-center gap-4">
-            {menuItems.map((item: any) => renderMenuItem(item))}
-          </nav>
         </div>
+        
+        {/* Menu Links */}
+        <nav className={`hidden lg:flex items-center gap-4 ${
+          alignMenu === 'center' 
+            ? 'absolute left-1/2 -translate-x-1/2' 
+            : alignMenu === 'right' 
+              ? 'ml-auto mr-6' 
+              : 'mr-auto ml-12'
+        }`}>
+          {menuItems.map((item: any) => renderMenuItem(item))}
+        </nav>
 
-        <div className="flex items-center gap-4">
+        {/* CTA Button & Mobile Trigger */}
+        <div className="flex items-center gap-4 shrink-0">
           {buttonLabel && (
             <a 
-              href={buttonHref}
+              href={normalizeHref(buttonHref, defaultLanguage)}
               style={{ backgroundColor: btnBg, color: btnColor }}
               className="hidden sm:block px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-md active:scale-95 hover:opacity-90"
             >
@@ -994,7 +1034,11 @@ const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
             style={{ backgroundColor: bg }}
           >
             <div className="flex justify-between items-center p-6 border-b border-neutral-100">
-              <img src={logo} alt="Logo" style={{ height: '30px' }} />
+              {logo ? (
+                <img src={logo} alt="Logo" style={{ height: '30px' }} />
+              ) : (
+                <span className="text-xl font-bold tracking-tight" style={{ color: textColor }}>Logo</span>
+              )}
               <button 
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 hover:bg-black/5 rounded-lg transition-colors"
@@ -1011,7 +1055,7 @@ const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
             <div className="p-6 border-t border-neutral-100">
               {buttonLabel && (
                 <a 
-                  href={buttonHref}
+                  href={normalizeHref(buttonHref, defaultLanguage)}
                   style={{ backgroundColor: btnBg, color: btnColor }}
                   className="block w-full text-center py-4 rounded-xl text-sm font-black uppercase tracking-widest"
                 >
@@ -1027,9 +1071,10 @@ const HeaderBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
 }
 
 const FooterBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
-  const { 
-    logo = '', 
-    bg = '#111111', 
+  const { defaultLanguage } = useProject()
+  const {
+    logo = '',
+    bg = '#111111',
     textColor = '#ffffff',
     copyright = '',
     columns = [],
@@ -1047,29 +1092,33 @@ const FooterBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ 
             </p>
           </div>
           
-          {columns.map((col: any, idx: number) => (
-            <div key={idx} className="space-y-6">
-              {col.href && col.href !== '#' ? (
-                <a href={col.href} className="block font-bold uppercase tracking-widest text-xs opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">
-                  {col.label || 'Section'}
-                </a>
-              ) : (
-                <h5 className="font-bold uppercase tracking-widest text-xs opacity-40">{col.label || 'Section'}</h5>
-              )}
-              
-              {(col.children && col.children.length > 0) && (
-                <ul className="space-y-4">
-                  {col.children.map((link: any, lIdx: number) => (
-                    <li key={lIdx}>
-                      <a href={link.href} className="text-sm opacity-70 hover:opacity-100 transition-opacity">
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
+          {columns.map((col: any, idx: number) => {
+            const colTitle = col.title || col.label || 'Section'
+            const colLinks = col.links || col.children || []
+            return (
+              <div key={idx} className="space-y-6">
+                {col.href && col.href !== '#' ? (
+                  <a href={normalizeHref(col.href, defaultLanguage)} className="block font-bold uppercase tracking-widest text-xs opacity-40 hover:opacity-100 hover:text-blue-500 transition-all">
+                    {colTitle}
+                  </a>
+                ) : (
+                  <h5 className="font-bold uppercase tracking-widest text-xs opacity-40">{colTitle}</h5>
+                )}
+                
+                {colLinks.length > 0 && (
+                  <ul className="space-y-4">
+                    {colLinks.map((link: any, lIdx: number) => (
+                      <li key={lIdx}>
+                        <a href={normalizeHref(link.href, defaultLanguage)} className="text-sm opacity-70 hover:opacity-100 transition-opacity">
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-medium uppercase tracking-widest opacity-40">
@@ -1327,6 +1376,374 @@ const MissionVisionBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }
   )
 }
 
+const GlobalComponentBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { componentId, bg = '#ffffff', padding = '0' } = node.props
+  const [component, setComponent] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    if (!componentId) {
+      setLoading(false)
+      return
+    }
+    const fetchComponent = async () => {
+      try {
+        const res = await client.get(`/components/${componentId}`)
+        setComponent(res.data)
+      } catch (err) {
+        console.error("Failed to fetch global component", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchComponent()
+  }, [componentId])
+
+  const style: React.CSSProperties = { backgroundColor: bg, padding }
+
+  if (!componentId) {
+    return (
+      <div style={style} className="w-full text-center py-12 border-2 border-dashed border-neutral-300 rounded-lg text-neutral-400 text-sm">
+        Sélectionnez un composant global dans les propriétés
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div style={style} className="w-full flex items-center justify-center py-20">
+        <div className="animate-pulse text-neutral-400 text-sm uppercase tracking-widest">Chargement...</div>
+      </div>
+    )
+  }
+
+  if (!component) {
+    return (
+      <div style={style} className="w-full text-center py-12 text-red-400 text-sm">
+        Composant introuvable
+      </div>
+    )
+  }
+
+  return (
+    <div style={style} className="w-full">
+      <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 opacity-50">
+        ? {component.name}
+      </div>
+      {component.type && component.type !== 'globalComponent' ? (
+        <BlockRenderer
+          mode="preview"
+          node={{
+            id: `global-component-render-${component.id ?? componentId}`,
+            type: component.type,
+            props: component.default_props || {},
+            children: []
+          }}
+        />
+      ) : (
+        <div className="text-red-400 text-sm">
+          Type de composant global invalide.
+        </div>
+      )}
+    </div>
+  )
+}
+
+const FormBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const { formId, bg = '#ffffff', padding = '48px' } = node.props
+  const [form, setForm] = React.useState<any>(null)
+  const [submitting, setSubmitting] = React.useState(false)
+  const [submitted, setSubmitted] = React.useState(false)
+  const [formData, setFormData] = React.useState<Record<string, any>>({})
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    if (!formId) { setLoading(false); return }
+    const fetchForm = async () => {
+      try {
+        const res = await client.get(`/forms/${formId}`)
+        setForm(res.data)
+      } catch (err) {
+        console.error("Failed to fetch form", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchForm()
+  }, [formId])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formId) return
+    setSubmitting(true)
+    try {
+      await client.post(`/forms/${formId}/submissions`, { data: formData })
+      setSubmitted(true)
+      setFormData({})
+    } catch (err) {
+      console.error("Form submission failed", err)
+      alert("Erreur lors de l'envoi")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleFieldChange = (name: string, value: any) => {
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  if (!formId) {
+    return (
+      <div style={{ backgroundColor: bg, padding }} className="w-full text-center py-12 border-2 border-dashed border-neutral-300 rounded-lg text-neutral-400 text-sm">
+        Sélectionnez un formulaire dans les propriétés
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div style={{ backgroundColor: bg, padding }} className="w-full flex items-center justify-center py-20">
+        <div className="animate-pulse text-neutral-400 text-sm uppercase tracking-widest">Chargement...</div>
+      </div>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <div style={{ backgroundColor: bg, padding }} className="w-full">
+        <div className="max-w-xl mx-auto text-center py-12">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-black text-green-600 uppercase tracking-tight mb-2">Merci !</h3>
+          <p className="text-neutral-500 text-sm">Votre message a bien été envoyé.</p>
+          <button
+            onClick={() => setSubmitted(false)}
+            className="mt-6 text-xs font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors"
+          >
+            Envoyer une autre réponse
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const fields = Array.isArray(form?.fields) ? form.fields : []
+
+  return (
+    <div style={{ backgroundColor: bg, padding }} className="w-full">
+      <div className="max-w-xl mx-auto">
+        {form?.name && (
+          <h3 className="text-lg font-black uppercase tracking-tight mb-1">{form.name}</h3>
+        )}
+        {form?.description && (
+          <p className="text-sm text-neutral-500 mb-6">{form.description}</p>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {fields.map((field: any) => (
+            <div key={field.name}>
+              <label className="block text-xs font-bold text-neutral-600 uppercase tracking-widest mb-1.5">
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {field.type === 'textarea' || field.type === 'richtext' ? (
+                <textarea
+                  required={field.required}
+                  value={formData[field.name] || ''}
+                  onChange={e => handleFieldChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  rows={4}
+                  className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 outline-none"
+                />
+              ) : field.type === 'select' ? (
+                <select
+                  required={field.required}
+                  value={formData[field.name] || ''}
+                  onChange={e => handleFieldChange(field.name, e.target.value)}
+                  className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 outline-none"
+                >
+                  <option value="">{field.placeholder || 'Choisir...'}</option>
+                  {(field.options || []).map((opt: string) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : field.type === 'checkbox' ? (
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData[field.name] || false}
+                    onChange={e => handleFieldChange(field.name, e.target.checked)}
+                    className="w-5 h-5 rounded border-neutral-800 bg-black text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-neutral-400">{field.label}</span>
+                </label>
+              ) : (
+                <input
+                  type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'number' ? 'number' : 'text'}
+                  required={field.required}
+                  value={formData[field.name] || ''}
+                  onChange={e => handleFieldChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 outline-none"
+                />
+              )}
+            </div>
+          ))}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+          >
+            {submitting ? 'Envoi en cours...' : 'Envoyer'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+const MapBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const {
+    embedUrl = '',
+    height = '400px',
+    margin = '0',
+    padding = '0'
+  } = node.props
+
+  if (!embedUrl) {
+    return (
+      <div style={{ margin, padding }} className="w-full">
+        <div className="bg-blue-50 rounded-lg border-2 border-blue-200 p-8">
+          <p className="text-sm text-blue-900 font-bold mb-3">📍 Pas de carte configurée</p>
+          <p className="text-xs text-blue-700 mb-4">Pour ajouter une carte Google Maps:</p>
+          <ol className="text-xs text-blue-700 space-y-2 ml-4 list-decimal">
+            <li>Ouvrez <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">Google Maps</a></li>
+            <li>Trouvez votre lieu et cliquez sur "Partager"</li>
+            <li>Cliquez sur "Intégrer une carte"</li>
+            <li>Copiez l'URL de l'iframe (commençant par <code className="bg-white px-1 rounded">https://www.google.com/maps/embed</code>)</li>
+            <li>Collez-la dans les propriétés du bloc à droite</li>
+          </ol>
+        </div>
+      </div>
+    )
+  }
+
+  // Validation basique: vérifier que c'est une URL embed sécurisée
+  const isValidEmbedUrl = embedUrl.includes('google.com/maps/embed') || embedUrl.includes('maps.google.com') || embedUrl.startsWith('https://')
+
+  if (!isValidEmbedUrl) {
+    return (
+      <div style={{ margin, padding }} className="w-full">
+        <div className="bg-red-50 rounded-lg border-2 border-red-200 p-4">
+          <p className="text-sm text-red-900 font-bold">⚠️ URL invalide</p>
+          <p className="text-xs text-red-700 mt-2">L'URL doit être une URL d'embed (commençant par https://www.google.com/maps/embed)</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ margin, padding }} className="w-full">
+      <div style={{ height }} className="w-full rounded-lg overflow-hidden shadow-lg border border-neutral-200">
+        <iframe
+          src={embedUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen={true}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        ></iframe>
+      </div>
+    </div>
+  )
+}
+
+const GalleryBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const {
+    images = [],
+    columns = 3,
+    gap = '24px',
+    margin = '0',
+    padding = '0'
+  } = node.props
+
+  const imageList = Array.isArray(images) ? images : []
+  const numCols = parseInt(String(columns)) || 3
+
+  const getGridColsClass = (cols: number) => {
+    if (cols === 2) return 'grid-cols-1 md:grid-cols-2'
+    if (cols === 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+    return 'grid-cols-1 md:grid-cols-3'
+  }
+
+  return (
+    <div style={{ margin, padding }} className="w-full">
+      <div className={`grid ${getGridColsClass(numCols)} gap-6 md:gap-8`} style={{ gap }}>
+        {imageList.map((img: any, idx: number) => (
+          <div key={idx} className="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500">
+            <div className="relative aspect-square overflow-hidden rounded-lg bg-neutral-100">
+              <img
+                src={img.src || 'https://via.placeholder.com/400x400'}
+                alt={img.alt || `Image ${idx + 1}`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+            </div>
+            {img.alt && (
+              <p className="mt-3 text-sm font-medium text-neutral-700 line-clamp-2">
+                {img.alt}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const CircularGalleryBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const {
+    items = [],
+    bend = 3,
+    textColor = '#ffffff',
+    borderRadius = 0.05,
+    scrollSpeed = 2,
+    scrollEase = 0.05,
+    height = '600px',
+    bg = '#000000',
+    margin = '0',
+    padding = '0'
+  } = node.props
+
+  // Import CircularGallery dynamically to avoid SSR issues
+  const CircularGallery = React.lazy(() => import('../builder/components/CircularGallery').then(m => ({ default: m.default })))
+
+  return (
+    <div style={{ backgroundColor: bg, margin, padding }} className="w-full overflow-hidden">
+      <div style={{ height, position: 'relative' }} className="w-full">
+        <React.Suspense fallback={
+          <div className="w-full h-full flex items-center justify-center bg-neutral-900">
+            <div className="animate-pulse text-neutral-400 text-sm uppercase tracking-widest">Galerie circulaire en chargement...</div>
+          </div>
+        }>
+          <CircularGallery
+            items={Array.isArray(items) && items.length > 0 ? items : undefined}
+            bend={Number(bend)}
+            textColor={textColor}
+            borderRadius={Number(borderRadius)}
+            scrollSpeed={Number(scrollSpeed)}
+            scrollEase={Number(scrollEase)}
+            font="bold 30px Figtree"
+          />
+        </React.Suspense>
+      </div>
+    </div>
+  )
+}
+
 const TableBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
   const { 
     title = 'Spécifications',
@@ -1419,12 +1836,103 @@ const TableBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ n
   )
 }
 
-const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = ({ node, mode = 'edit' }) => {
+const StatsBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ node }) => {
+  const {
+    items = [],
+    columns = 3,
+    bg = '#ffffff',
+    padding = '80px 48px'
+  } = node.props
+
+  const itemList = Array.isArray(items) ? items : []
+
+  const getLightBgColor = (hexColor: string) => {
+    if (hexColor && hexColor.startsWith('#')) {
+      const cleanHex = hexColor.replace('#', '')
+      if (cleanHex.length === 6) {
+        const r = parseInt(cleanHex.substring(0, 2), 16)
+        const g = parseInt(cleanHex.substring(2, 4), 16)
+        const b = parseInt(cleanHex.substring(4, 6), 16)
+        return `rgba(${r}, ${g}, ${b}, 0.03)`
+      } else if (cleanHex.length === 3) {
+        const r = parseInt(cleanHex.substring(0, 1).repeat(2), 16)
+        const g = parseInt(cleanHex.substring(1, 2).repeat(2), 16)
+        const b = parseInt(cleanHex.substring(2, 3).repeat(2), 16)
+        return `rgba(${r}, ${g}, ${b}, 0.03)`
+      }
+    }
+    return hexColor ? `${hexColor}0b` : 'rgba(0, 0, 0, 0.02)'
+  }
+
+  const getGridColsClass = (cols: number | string) => {
+    const num = Number(cols)
+    if (num === 1) return 'grid-cols-1'
+    if (num === 2) return 'grid-cols-1 md:grid-cols-2'
+    if (num === 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+    return 'grid-cols-1 md:grid-cols-3'
+  }
+
+  return (
+    <section style={{ backgroundColor: bg, padding }} className="w-full font-['Inter',sans-serif] overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        <div className={`grid ${getGridColsClass(columns)} gap-8`}>
+          {itemList.map((item: any, i: number) => {
+            const cardColor = item.color || '#2563eb'
+            const lightBg = getLightBgColor(cardColor)
+            return (
+              <div 
+                key={i} 
+                style={{ 
+                  borderColor: cardColor, 
+                  backgroundColor: lightBg,
+                  boxShadow: `0 10px 30px -10px ${cardColor}15`
+                }}
+                className="flex flex-col justify-between p-8 rounded-[1.8rem] border-2 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+              >
+                <div>
+                  <span 
+                    style={{ color: cardColor }} 
+                    className="text-4xl md:text-5xl font-black tracking-tight block mb-4"
+                  >
+                    {item.number || ''}
+                  </span>
+                  <p className="text-neutral-900 font-bold text-base md:text-lg leading-snug mb-6">
+                    {item.label || ''}
+                  </p>
+                </div>
+                {item.source && (
+                  <span className="text-[11px] font-medium tracking-wide uppercase text-neutral-400 mt-auto block pt-4 border-t border-neutral-100">
+                    {item.source}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Resolve i18n props for a node given a language code.
+ * Returns a new props object with translated values merged in.
+ */
+function resolveI18nProps(node: BlockNode, lang: string): Record<string, any> {
+  if (!node.props?.i18n?.[lang]) return node.props
+  const translations = node.props.i18n[lang]
+  return { ...node.props, ...translations }
+}
+
+const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview'; lang?: string }> = ({ node, mode = 'edit', lang }) => {
   const selectBlock = useBuilderStore((state) => state.selectBlock)
   const deleteBlock = useBuilderStore((state) => state.deleteBlock)
   const selectedId = useBuilderStore((state) => state.selectedId)
-  
+  const storeLang = useBuilderStore((state) => state.currentLang)
+
+  const activeLang = lang || storeLang
   const isEdit = mode === 'edit'
+  const localizedNode = isEdit ? node : { ...node, props: resolveI18nProps(node, activeLang) }
 
   const COMPONENTS: Record<string, React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }>> = {
     heading: (props) => <HeadingBlock {...props} />,
@@ -1449,6 +1957,12 @@ const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = 
     contact: (props) => <ContactBlock {...props} />,
     mission_vision: (props) => <MissionVisionBlock {...props} />,
     table: (props) => <TableBlock {...props} />,
+    globalComponent: (props) => <GlobalComponentBlock {...props} />,
+	    form: (props) => <FormBlock {...props} />,
+    gallery: (props) => <GalleryBlock {...props} />,
+    map: (props) => <MapBlock {...props} />,
+    circular_gallery: (props) => <CircularGalleryBlock {...props} />,
+    stats: (props) => <StatsBlock {...props} />,
   }
 
   const Component = COMPONENTS[node.type]
@@ -1460,21 +1974,21 @@ const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = 
       onClick={(e) => {
         if (!isEdit) return
         e.stopPropagation()
-        selectBlock(node.id)
+        selectBlock(localizedNode.id)
       }}
       className={`relative transition-all ${
-        isEdit 
-          ? `cursor-pointer group rounded ${selectedId === node.id ? 'ring-2 ring-blue-500 ring-offset-1' : 'hover:ring-1 hover:ring-blue-300'}`
+        isEdit
+          ? `cursor-pointer group rounded ${selectedId === localizedNode.id ? 'ring-2 ring-blue-500 ring-offset-1' : 'hover:ring-1 hover:ring-blue-300'}`
           : ''
       }`}
     >
       {/* Delete Button Overlay */}
       {isEdit && (
-        <div className={`absolute -right-2 -top-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity ${selectedId === node.id ? 'opacity-100' : ''}`}>
+        <div className={`absolute -right-2 -top-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity ${selectedId === localizedNode.id ? 'opacity-100' : ''}`}>
           <button
             onClick={(e) => {
               e.stopPropagation()
-              deleteBlock(node.id)
+              deleteBlock(localizedNode.id)
             }}
             className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-lg border border-red-700 transition-colors"
             title="Supprimer ce bloc"
@@ -1484,9 +1998,11 @@ const BlockRenderer: React.FC<{ node: BlockNode; mode?: 'edit' | 'preview' }> = 
         </div>
       )}
 
-      <Component node={node} mode={mode} />
+      <Component node={localizedNode} mode={mode} />
     </div>
   )
 }
 
 export default BlockRenderer
+
+

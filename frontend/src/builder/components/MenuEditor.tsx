@@ -11,9 +11,10 @@ interface MenuEditorProps {
   items: MenuItem[]
   onChange: (items: MenuItem[]) => void
   availablePages?: { title: string, slug: string }[]
+  lang?: string
 }
 
-const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages = [] }) => {
+const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages = [], lang = 'fr' }) => {
   const addItem = (_: MenuItem[], path: number[] = []) => {
     const newItems = JSON.parse(JSON.stringify(items))
     let current = newItems
@@ -87,7 +88,7 @@ const MenuEditor: React.FC<MenuEditorProps> = ({ items, onChange, availablePages
                   className="bg-neutral-800 border border-neutral-700 rounded-lg px-2 py-1.5 text-[9px] font-bold text-neutral-400 focus:border-blue-500 outline-none cursor-pointer max-w-[100px]"
                   onChange={(e) => {
                     const slug = e.target.value
-                    const link = slug === '' ? '/' : `/${slug}`
+                    const link = slug === '' ? `/${lang}` : `/${lang}/${slug}`
                     updateItem(path, 'href', link)
                     
                     if (item.label === 'Nouveau lien' || !item.label) {

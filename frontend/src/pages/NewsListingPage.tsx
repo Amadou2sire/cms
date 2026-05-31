@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useProject } from '../contexts/ProjectContext'
 import client from '../api/client'
 import BlockRenderer from '../builder/BlockRenderer'
 import { Calendar, Newspaper, ArrowRight } from 'lucide-react'
@@ -35,7 +37,7 @@ const NewsListingPage: React.FC = () => {
       try {
         const [articlesRes, settingsRes] = await Promise.all([
           client.get('/articles/public/'),
-          client.get('/settings')
+          client.get('/settings/')
         ])
         setArticles(articlesRes.data)
         setHeaderConfig(settingsRes.data.header_config)
@@ -59,6 +61,10 @@ const NewsListingPage: React.FC = () => {
       <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
   )
+
+  const { lang } = useParams<{ lang?: string }>()
+  const { defaultLanguage } = useProject()
+  const effectiveLang = lang || defaultLanguage
 
   return (
     <div className="min-h-screen bg-white text-black font-['Inter',sans-serif]">
@@ -114,7 +120,7 @@ const NewsListingPage: React.FC = () => {
             {filteredArticles.map((article) => (
               <a 
                 key={article.id} 
-                href={`/articles/${article.slug}`} 
+                href={`/${effectiveLang}/articles/${article.slug}`} 
                 className="group flex flex-col h-full overflow-hidden transition-all duration-500"
               >
                 <div className="aspect-[16/10] overflow-hidden rounded-[2rem] bg-neutral-100 relative shadow-sm group-hover:shadow-2xl transition-all duration-700">

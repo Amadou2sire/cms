@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import client from '../api/client'
 import BlockRenderer from '../builder/BlockRenderer'
+import { useProject } from '../contexts/ProjectContext'
 
 const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
-  const { slug } = useParams<{ slug: string }>()
+  const { slug, lang } = useParams<{ slug?: string; lang?: string }>()
+  const { defaultLanguage, currentProject } = useProject()
+  const effectiveLang = lang || defaultLanguage
   const [page, setPage] = useState<any>(null)
   const [headerConfig, setHeaderConfig] = useState<any>(null)
   const [footerConfig, setFooterConfig] = useState<any>(null)
@@ -12,23 +15,39 @@ const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const pageUrl = isHome ? '/pages/public/site/home' : `/pages/public/${slug}`
-    
-    Promise.all([
-      client.get(pageUrl),
-      client.get('/settings')
-    ]).then(([pageRes, settingsRes]) => {
+    const pageUrl = isHome ? `/pages/public/site/home?lang=${effectiveLang}` : `/pages/public/${slug}?lang=${effectiveLang}`
+
+    client.get(pageUrl).then(pageRes => {
       const pageData = pageRes.data
       setPage(pageData)
-      setHeaderConfig(settingsRes.data.header_config)
-      setFooterConfig(settingsRes.data.footer_config)
       setLoading(false)
+
+      if (pageData.project_id) {
+        client.get(`/settings/?project_id=${pageData.project_id}`).then(settingsRes => {
+          const hConfig = settingsRes.data.header_config
+          setHeaderConfig(hConfig)
+          setFooterConfig(settingsRes.data.footer_config)
+
+          // Apply custom favicon dynamically
+          const favicon = hConfig?.faviconUrl || ''
+          let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
+          if (!link) {
+            link = document.createElement('link')
+            link.rel = 'icon'
+            document.head.appendChild(link)
+          }
+          link.href = favicon || '/5069fav.ico'
+        }).catch(err => console.error("Failed to load settings for public page", err))
+      }
 
       // Apply SEO settings
       const seo = pageData.schema?.seo
+      const siteName = currentProject?.name || ''
+      const pageTitle = seo?.metaTitle || pageData.title || 'Mon Site'
+      document.title = siteName ? `${pageTitle} | ${siteName}` : pageTitle
+
       if (seo) {
-        document.title = seo.metaTitle || pageData.title || 'Mon Site'
-        
+
         // Meta description
         let metaDesc = document.querySelector('meta[name="description"]')
         if (!metaDesc) {
@@ -62,7 +81,7 @@ const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
           geoScript.setAttribute('type', 'application/ld+json')
           document.head.appendChild(geoScript)
         }
-        
+
         const geoData = {
           "@context": "https://schema.org",
           "@type": "WebPage",
@@ -114,36 +133,42 @@ const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
       setError(true)
       setLoading(false)
     })
-  }, [slug, isHome])
+  }, [slug, isHome, effectiveLang])
 
   if (loading) return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
   )
-  
+
   if (error || !page) return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8 text-center">
       <h1 className="text-6xl font-black mb-4">404</h1>
-      <p className="text-neutral-500 uppercase tracking-widest text-sm">Page introuvable ou non publiée</p>
-      <a href="/" className="mt-8 text-blue-500 hover:underline text-xs font-bold uppercase tracking-widest">Retourner à l'accueil</a>
+      <p className="text-neutral-500 uppercase tracking-widest text-sm">Page introuvable ou non publie</p>
+      <a href={`/${effectiveLang}/`} className="mt-8 text-blue-500 hover:underline text-xs font-bold uppercase tracking-widest">Retourner a l'accueil</a>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-white text-black overflow-x-hidden">
+    <div className="min-h-screen bg-white text-black">
       {/* 1. Header Global si absent du schema */}
       {page.schema.root.children.every((b: any) => b.type !== 'header') && headerConfig && (
-        <BlockRenderer 
-          node={{ id: 'global-header', type: 'header', props: headerConfig, children: [] }} 
-          mode="preview" 
-        />
+        <>
+          <BlockRenderer
+            node={{ id: 'global-header', type: 'header', props: headerConfig, children: [] }}
+            mode="preview"
+            lang={effectiveLang}
+          />
+          {/* Spacer to compensate for fixed header */}
+          {(headerConfig.sticky === 'true' || headerConfig.sticky === true) && (
+            <div style={{ height: '80px' }} />
+          )}
+        </>
       )}
 
       {/* 2. Contenu de la page */}
-      <div className="flex flex-col">
-        {page.schema.root.children.map((block: any) => {
-          // Override local header/footer props with global settings
+      <div className="flex flex-col overflow-x-hidden">
+        {page.schema.root.children.map((block: any, index: number) => {
           let finalBlock = block
           if (block.type === 'header' && headerConfig) {
             finalBlock = { ...block, props: { ...block.props, ...headerConfig } }
@@ -151,15 +176,24 @@ const PublicPage: React.FC<{ isHome?: boolean }> = ({ isHome = false }) => {
           if (block.type === 'footer' && footerConfig) {
             finalBlock = { ...block, props: { ...block.props, ...footerConfig } }
           }
-          return <BlockRenderer key={block.id} node={finalBlock} mode="preview" />
+          return (
+            <React.Fragment key={block.id}>
+              <BlockRenderer node={finalBlock} mode="preview" lang={effectiveLang} />
+              {/* Spacer after inline header block if fixed */}
+              {block.type === 'header' && (headerConfig?.sticky === 'true' || headerConfig?.sticky === true) && (
+                <div style={{ height: '80px' }} />
+              )}
+            </React.Fragment>
+          )
         })}
       </div>
 
       {/* 3. Footer Global si absent du schema */}
       {page.schema.root.children.every((b: any) => b.type !== 'footer') && footerConfig && (
-        <BlockRenderer 
-          node={{ id: 'global-footer', type: 'footer', props: footerConfig, children: [] }} 
-          mode="preview" 
+        <BlockRenderer
+          node={{ id: 'global-footer', type: 'footer', props: footerConfig, children: [] }}
+          mode="preview"
+          lang={effectiveLang}
         />
       )}
     </div>

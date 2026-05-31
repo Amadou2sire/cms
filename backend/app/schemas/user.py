@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -19,8 +19,7 @@ class User(UserBase):
     id: UUID
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, json_encoders={UUID: str})
 
 class Token(BaseModel):
     access_token: str

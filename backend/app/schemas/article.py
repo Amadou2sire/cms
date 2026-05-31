@@ -1,10 +1,11 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, Any, Dict
 from uuid import UUID
 from datetime import datetime
 
 
 class ArticleBase(BaseModel):
+    project_id: Optional[UUID] = None
     title: str
     slug: Optional[str] = None
     image_url: Optional[str] = None
@@ -13,6 +14,7 @@ class ArticleBase(BaseModel):
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     category: Optional[str] = 'News'
+    translations: Optional[Dict[str, Any]] = None
 
 
 class ArticleCreate(ArticleBase):
@@ -28,6 +30,7 @@ class ArticleUpdate(BaseModel):
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     category: Optional[str] = None
+    translations: Optional[Dict[str, Any]] = None
 
 
 class Article(ArticleBase):
@@ -36,5 +39,4 @@ class Article(ArticleBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, json_encoders={UUID: str})

@@ -4,6 +4,9 @@ from app.models.models import User
 from app.core.security import get_password_hash
 from sqlalchemy.future import select
 
+# Import all models to ensure they are registered with Base.metadata
+from app.api import auth, pages, public, media, settings as api_settings, articles, projects, components, collections, forms, webhooks  # noqa: F401
+
 async def create_superadmin():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

@@ -5,6 +5,7 @@ export interface PropDefinition {
   default: any
   options?: string[]
   itemSchema?: Record<string, PropDefinition>
+  i18n?: boolean
 }
 
 export interface BlockDefinition {
@@ -31,7 +32,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '0px 0px 0px 0px'
     },
     propSchema: {
-      text:  { type: 'string', label: 'Texte', default: 'Nouveau titre' },
+      text:  { type: 'string', label: 'Texte', default: 'Nouveau titre', i18n: true },
       level: { type: 'select', label: 'Niveau (1-6)', default: 2, options: ['1','2','3','4','5','6'] },
       color: { type: 'color',  label: 'Couleur', default: '#171717' },
       align: { type: 'select', label: 'Alignement', default: 'left', options: ['left','center','right'] },
@@ -44,16 +45,16 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Texte',
     icon: 'AlignLeft',
     canHaveChildren: false,
-    defaultProps: { 
-      content: 'Votre texte ici...', 
-      color: '#333333', 
-      fontSize: '16px', 
+    defaultProps: {
+      content: 'Votre texte ici...',
+      color: '#333333',
+      fontSize: '16px',
       align: 'left',
       margin: '0px 0px 0px 0px',
       padding: '0px 0px 0px 0px'
     },
     propSchema: {
-      content:  { type: 'richtext', label: 'Contenu', default: '' },
+      content:  { type: 'richtext', label: 'Contenu', default: '', i18n: true },
       color:    { type: 'color',    label: 'Couleur', default: '#333333' },
       fontSize: { type: 'select',   label: 'Taille', default: '16px', options: ['12px','14px','16px','18px','20px','24px','32px'] },
       align:    { type: 'select',   label: 'Alignement', default: 'left', options: ['left','center','right','justify'] },
@@ -100,7 +101,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '10px 20px 10px 20px'
     },
     propSchema: {
-      label:   { type: 'string', label: 'Texte', default: 'Cliquer ici' },
+      label:   { type: 'string', label: 'Texte', default: 'Cliquer ici', i18n: true },
       href:    { type: 'string', label: 'Lien', default: '#' },
       variant: { type: 'select', label: 'Style', default: 'primary', options: ['primary','secondary','ghost'] },
       color:   { type: 'color',  label: 'Couleur texte', default: '#ffffff' },
@@ -178,6 +179,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     canHaveChildren: false,
     defaultProps: {
       bgImage: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2070',
+      bgVideo: '',
       overlayOpacity: '0.6',
       title: 'Fonderie de précision',
       subtitle: 'Fonte & Aluminium — 100% export',
@@ -186,20 +188,21 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       primaryBtnHref: '#',
       secondaryBtnText: 'Nous contacter',
       secondaryBtnHref: '#',
-      height: '80vh',
+      height: '100vh',
       textAlign: 'left'
     },
     propSchema: {
       bgImage: { type: 'media', label: 'Image de fond', default: '' },
+      bgVideo: { type: 'media', label: 'Vidéo de fond', default: '' },
       overlayOpacity: { type: 'select', label: 'Opacité calque', default: '0.6', options: ['0.2', '0.4', '0.6', '0.8'] },
-      title: { type: 'string', label: 'Titre Principal', default: 'Titre Hero' },
-      subtitle: { type: 'string', label: 'Sous-titre (Rouge)', default: 'Sous-titre' },
-      description: { type: 'richtext', label: 'Description', default: '' },
-      primaryBtnText: { type: 'string', label: 'Bouton Principal', default: 'Bouton 1' },
+      title: { type: 'string', label: 'Titre Principal', default: 'Titre Hero', i18n: true },
+      subtitle: { type: 'string', label: 'Sous-titre (Rouge)', default: 'Sous-titre', i18n: true },
+      description: { type: 'richtext', label: 'Description', default: '', i18n: true },
+      primaryBtnText: { type: 'string', label: 'Bouton Principal', default: 'Bouton 1', i18n: true },
       primaryBtnHref: { type: 'string', label: 'Lien Bouton 1', default: '#' },
-      secondaryBtnText: { type: 'string', label: 'Bouton Secondaire', default: 'Bouton 2' },
+      secondaryBtnText: { type: 'string', label: 'Bouton Secondaire', default: 'Bouton 2', i18n: true },
       secondaryBtnHref: { type: 'string', label: 'Lien Bouton 2', default: '#' },
-      height: { type: 'select', label: 'Hauteur', default: '80vh', options: ['60vh', '70vh', '80vh', '90vh', '100vh'] },
+      height: { type: 'select', label: 'Hauteur', default: '100vh', options: ['60vh', '70vh', '80vh', '90vh', '100vh'] },
       textAlign: { type: 'select', label: 'Alignement', default: 'left', options: ['left', 'center', 'right'] }
     }
   },
@@ -221,13 +224,13 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     },
     propSchema: {
       image: { type: 'media', label: 'Image', default: '' },
-      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'QUI SOMMES-NOUS?' },
-      title: { type: 'richtext', label: 'Titre Principal', default: '' },
-      description: { type: 'richtext', label: 'Description', default: '' },
-      linkText: { type: 'string', label: 'Texte Lien', default: 'En savoir plus' },
+      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'QUI SOMMES-NOUS?', i18n: true },
+      title: { type: 'richtext', label: 'Titre Principal', default: '', i18n: true },
+      description: { type: 'richtext', label: 'Description', default: '', i18n: true },
+      linkText: { type: 'string', label: 'Texte Lien', default: 'En savoir plus', i18n: true },
       linkHref: { type: 'string', label: 'Lien', default: '#' },
-      badgeText: { type: 'string', label: 'Chiffre Badge', default: '25+' },
-      badgeSub: { type: 'string', label: 'Texte Badge', default: "ANS D'EXPERTISE" },
+      badgeText: { type: 'string', label: 'Chiffre Badge', default: '25+', i18n: true },
+      badgeSub: { type: 'string', label: 'Texte Badge', default: "ANS D'EXPERTISE", i18n: true },
       reverse: { type: 'select', label: 'Inverser', default: 'false', options: ['true', 'false'] }
     }
   },
@@ -256,8 +259,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       columns: 2
     },
     propSchema: {
-      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'NOS PÔLES D’EXCELLENCE' },
-      title: { type: 'string', label: 'Titre Section', default: 'Titre de la grille' },
+      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'NOS PÔLES D’EXCELLENCE', i18n: true },
+      title: { type: 'string', label: 'Titre Section', default: 'Titre de la grille', i18n: true },
       items: { 
         type: 'list', 
         label: 'Cartes d\'Excellence', 
@@ -287,11 +290,11 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       reverse: false
     },
     propSchema: {
-      accentText: { type: 'string', label: 'Texte Accent', default: 'BUREAU D’ÉTUDES' },
-      title: { type: 'richtext', label: 'Titre Principal', default: '' },
-      description: { type: 'richtext', label: 'Description', default: '' },
+      accentText: { type: 'string', label: 'Texte Accent', default: 'BUREAU D’ÉTUDES', i18n: true },
+      title: { type: 'richtext', label: 'Titre Principal', default: '', i18n: true },
+      description: { type: 'richtext', label: 'Description', default: '', i18n: true },
       image: { type: 'media', label: 'Image latérale', default: '' },
-      points: { type: 'string', label: 'Points clés (séparés par des virgules)', default: '' },
+      points: { type: 'string', label: 'Points clés (séparés par des virgules)', default: '', i18n: true },
       bg: { type: 'color', label: 'Fond Section', default: '#0a0a0a' },
       reverse: { type: 'select', label: 'Inverser', default: 'false', options: ['true', 'false'] }
     }
@@ -311,11 +314,11 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       bg: '#141414'
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre', default: 'Titre' },
+      title: { type: 'string', label: 'Titre', default: 'Titre', i18n: true },
       description: { type: 'string', label: 'Description', default: '' },
-      btn1Text: { type: 'string', label: 'Bouton 1 (Blanc)', default: 'Bouton 1' },
+      btn1Text: { type: 'string', label: 'Bouton 1 (Blanc)', default: 'Bouton 1', i18n: true },
       btn1Href: { type: 'string', label: 'Lien Bouton 1', default: '#' },
-      btn2Text: { type: 'string', label: 'Bouton 2 (Rouge)', default: 'Bouton 2' },
+      btn2Text: { type: 'string', label: 'Bouton 2 (Rouge)', default: 'Bouton 2', i18n: true },
       btn2Href: { type: 'string', label: 'Lien Bouton 2', default: '#' },
       bg: { type: 'color', label: 'Fond', default: '#141414' }
     }
@@ -346,11 +349,11 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       reverse: false
     },
     propSchema: {
-      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'INNOVATION' },
-      title: { type: 'string', label: 'Titre Section', default: 'Titre' },
+      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'INNOVATION', i18n: true },
+      title: { type: 'string', label: 'Titre Section', default: 'Titre', i18n: true },
       image: { type: 'media', label: 'Image Principale', default: '' },
-      badgeValue: { type: 'string', label: 'Valeur Badge (Blanc)', default: '-0.02mm' },
-      badgeLabel: { type: 'string', label: 'Libellé Badge', default: 'TOLÉRANCE GARANTIE' },
+      badgeValue: { type: 'string', label: 'Valeur Badge (Blanc)', default: '-0.02mm', i18n: true },
+      badgeLabel: { type: 'string', label: 'Libellé Badge', default: 'TOLÉRANCE GARANTIE', i18n: true },
       items: {
         type: 'list',
         label: 'Services / Points',
@@ -394,8 +397,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       ]
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre Section', default: 'QUALITÉ' },
-      subtitle: { type: 'string', label: 'Sous-titre / Citation', default: '' },
+      title: { type: 'string', label: 'Titre Section', default: 'QUALITÉ', i18n: true },
+      subtitle: { type: 'string', label: 'Sous-titre / Citation', default: '', i18n: true },
       items: {
         type: 'list',
         label: 'Certifications / Contrôles',
@@ -427,7 +430,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       reverse: false
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre Section', default: 'Laboratoire' },
+      title: { type: 'string', label: 'Titre Section', default: 'Laboratoire', i18n: true },
       items: {
         type: 'list',
         label: 'Points d\'expertise',
@@ -448,8 +451,9 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     icon: 'PanelTop',
     canHaveChildren: false,
     defaultProps: {
-      logo: 'https://via.placeholder.com/150x50?text=LOGO',
+      logo: '',
       logoHeight: '40px',
+      alignMenu: 'left',
       bg: '#ffffff',
       textColor: '#000000',
       btnBg: '#2563eb',
@@ -481,13 +485,14 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     propSchema: {
       logo: { type: 'media', label: 'Logo', default: '' },
       logoHeight: { type: 'string', label: 'Hauteur Logo', default: '40px' },
+      alignMenu: { type: 'select', label: 'Alignement du Menu', default: 'left', options: ['left', 'center', 'right'] },
       bg: { type: 'color', label: 'Fond', default: '#ffffff' },
       textColor: { type: 'color', label: 'Couleur Menu', default: '#000000' },
       btnBg: { type: 'color', label: 'Fond Bouton', default: '#2563eb' },
       btnColor: { type: 'color', label: 'Texte Bouton', default: '#ffffff' },
       sticky: { type: 'select', label: 'Collant', default: true, options: ['true', 'false'] },
       menuItems: { type: 'menu', label: 'Menu (3 niveaux)', default: [] },
-      buttonLabel: { type: 'string', label: 'Texte Bouton', default: 'Démarrer' },
+      buttonLabel: { type: 'string', label: 'Texte Bouton', default: 'Démarrer', i18n: true },
       buttonHref: { type: 'string', label: 'Lien Bouton', default: '/start' },
       padding: { type: 'spacing', label: 'Padding (T R B L)', default: '16px 48px 16px 48px' }
     }
@@ -528,7 +533,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       logo: { type: 'media', label: 'Logo', default: '' },
       bg: { type: 'color', label: 'Fond', default: '#111111' },
       textColor: { type: 'color', label: 'Couleur Texte', default: '#ffffff' },
-      copyright: { type: 'string', label: 'Copyright', default: '' },
+      copyright: { type: 'string', label: 'Copyright', default: '', i18n: true },
       columns: { type: 'menu', label: 'Colonnes de liens', default: [] },
       padding: { type: 'spacing', label: 'Padding (T R B L)', default: '64px 48px 32px 48px' }
     }
@@ -547,8 +552,8 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '80px 48px 80px 48px'
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre Section', default: 'Dernières Actualités' },
-      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'NEWSROOM' },
+      title: { type: 'string', label: 'Titre Section', default: 'Dernières Actualités', i18n: true },
+      accentText: { type: 'string', label: 'Texte Accent (Rouge)', default: 'NEWSROOM', i18n: true },
       bg: { type: 'color', label: 'Fond', default: '#ffffff' },
       limit: { type: 'number', label: 'Nombre d\'articles', default: 4 },
       margin: { type: 'spacing', label: 'Marges (T R B L)', default: '0px 0px 0px 0px' },
@@ -571,15 +576,15 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '80px 48px 80px 48px'
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre', default: 'Questions Fréquentes' },
-      subtitle: { type: 'string', label: 'Sous-titre', default: 'Détails...' },
+      title: { type: 'string', label: 'Titre', default: 'Questions Fréquentes', i18n: true },
+      subtitle: { type: 'string', label: 'Sous-titre', default: 'Détails...', i18n: true },
       items: { 
         type: 'list', 
         label: 'Questions',
         default: [],
         itemSchema: {
-          question: { type: 'string', label: 'Question', default: 'Nouvelle Question' },
-          answer: { type: 'richtext', label: 'Réponse', default: 'Détails de la réponse...' }
+          question: { type: 'string', label: 'Question', default: 'Nouvelle Question', i18n: true },
+          answer: { type: 'richtext', label: 'Réponse', default: 'Détails de la réponse...', i18n: true }
         }
       },
       bg: { type: 'color', label: 'Fond', default: '#ffffff' },
@@ -603,13 +608,13 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '100px 48px 100px 48px'
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre', default: 'Contactez-nous' },
-      subtitle: { type: 'string', label: 'Sous-titre', default: 'Détails...' },
+      title: { type: 'string', label: 'Titre', default: 'Contactez-nous', i18n: true },
+      subtitle: { type: 'string', label: 'Sous-titre', default: 'Détails...', i18n: true },
       email: { type: 'string', label: 'E-mail', default: 'contact@fondinor.tn' },
       phone: { type: 'string', label: 'Téléphone', default: '+216 71 000 000' },
-      address: { type: 'string', label: 'Adresse', default: 'Zone Industrielle...' },
+      address: { type: 'string', label: 'Adresse', default: 'Zone Industrielle...', i18n: true },
       mapUrl: { type: 'string', label: 'URL Iframe Google Maps', default: '' },
-      buttonLabel: { type: 'string', label: 'Texte Bouton', default: 'Envoyer' },
+      buttonLabel: { type: 'string', label: 'Texte Bouton', default: 'Envoyer', i18n: true },
       bg: { type: 'color', label: 'Fond', default: '#ffffff' },
       padding: { type: 'spacing', label: 'Padding', default: '100px 48px 100px 48px' }
     }
@@ -629,13 +634,29 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '100px 48px 100px 48px'
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre Général', default: 'Notre Engagement' },
-      missionTitle: { type: 'string', label: 'Titre Mission', default: 'Notre Mission' },
-      missionText: { type: 'string', label: 'Texte Mission', default: '...' },
-      visionTitle: { type: 'string', label: 'Titre Vision', default: 'Notre Vision' },
-      visionText: { type: 'string', label: 'Texte Vision', default: '...' },
+      title: { type: 'string', label: 'Titre Général', default: 'Notre Engagement', i18n: true },
+      missionTitle: { type: 'string', label: 'Titre Mission', default: 'Notre Mission', i18n: true },
+      missionText: { type: 'string', label: 'Texte Mission', default: '...', i18n: true },
+      visionTitle: { type: 'string', label: 'Titre Vision', default: 'Notre Vision', i18n: true },
+      visionText: { type: 'string', label: 'Texte Vision', default: '...', i18n: true },
       bg: { type: 'color', label: 'Fond', default: '#f8f9fa' },
       padding: { type: 'spacing', label: 'Padding', default: '100px 48px 100px 48px' }
+    }
+  },
+  globalComponent: {
+    type: 'globalComponent',
+    label: 'Composant Global',
+    icon: 'Box',
+    canHaveChildren: false,
+    defaultProps: {
+      componentId: '',
+      bg: '#ffffff',
+      padding: '0px 0px 0px 0px'
+    },
+    propSchema: {
+      componentId: { type: 'string', label: 'ID du Composant Global', default: '' },
+      bg: { type: 'color', label: 'Fond', default: '#ffffff' },
+      padding: { type: 'spacing', label: 'Padding (T R B L)', default: '0px 0px 0px 0px' },
     }
   },
   table: {
@@ -655,7 +676,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       padding: '80px 48px 80px 48px'
     },
     propSchema: {
-      title: { type: 'string', label: 'Titre du tableau', default: 'Spécifications' },
+      title: { type: 'string', label: 'Titre du tableau', default: 'Spécifications', i18n: true },
       headers: { 
         type: 'list', 
         label: 'En-têtes', 
@@ -679,6 +700,211 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       },
       bg: { type: 'color', label: 'Fond', default: '#ffffff' },
       padding: { type: 'spacing', label: 'Padding', default: '80px 48px 80px 48px' }
+    }
+  },
+  form: {
+    type: 'form',
+    label: 'Formulaire',
+    icon: 'ClipboardList',
+    canHaveChildren: false,
+    defaultProps: {
+      formId: '',
+      bg: '#ffffff',
+      padding: '48px 48px 48px 48px'
+    },
+    propSchema: {
+      formId: { type: 'string', label: 'ID du Formulaire', default: '' },
+      bg: { type: 'color', label: 'Fond', default: '#ffffff' },
+      padding: { type: 'spacing', label: 'Padding (T R B L)', default: '48px 48px 48px 48px' },
+    }
+  },
+  circular_gallery: {
+    type: 'circular_gallery',
+    label: 'Galerie Circulaire',
+    icon: 'RotateCcw',
+    canHaveChildren: false,
+    defaultProps: {
+      items: [],
+      bend: 3,
+      textColor: '#ffffff',
+      borderRadius: 0.05,
+      scrollSpeed: 2,
+      scrollEase: 0.05,
+      height: '600px',
+      bg: '#000000',
+      margin: '0px 0px 0px 0px',
+      padding: '0px 0px 0px 0px'
+    },
+    propSchema: {
+      items: {
+        type: 'list',
+        label: 'Éléments de la galerie',
+        default: [],
+        itemSchema: {
+          image: { type: 'media', label: 'Image', default: '' },
+          text: { type: 'string', label: 'Texte / Libellé', default: 'Élément' }
+        }
+      },
+      bend: { type: 'select', label: 'Courbure', default: 3, options: ['-3', '-2', '-1', '0', '1', '2', '3', '4', '5'] },
+      textColor: { type: 'color', label: 'Couleur du texte', default: '#ffffff' },
+      borderRadius: { type: 'select', label: 'Rayon bordure', default: 0.05, options: ['0', '0.02', '0.05', '0.1', '0.15', '0.2'] },
+      scrollSpeed: { type: 'select', label: 'Vitesse défilement', default: 2, options: ['0.5', '1', '1.5', '2', '3', '4'] },
+      scrollEase: { type: 'select', label: 'Fluidité défilement', default: 0.05, options: ['0.01', '0.02', '0.05', '0.1', '0.15', '0.2'] },
+      height: { type: 'select', label: 'Hauteur', default: '600px', options: ['400px', '500px', '600px', '700px', '800px'] },
+      bg: { type: 'color', label: 'Fond', default: '#000000' },
+      margin: { type: 'spacing', label: 'Marges (T R B L)', default: '0px 0px 0px 0px' },
+      padding: { type: 'spacing', label: 'Padding (T R B L)', default: '0px 0px 0px 0px' }
+    }
+  },
+  gallery: {
+    type: 'gallery',
+    label: 'Galerie d\'Images',
+    icon: 'Images',
+    canHaveChildren: false,
+    defaultProps: {
+      images: [],
+      columns: 3,
+      gap: '24px',
+      margin: '0px 0px 0px 0px',
+      padding: '0px 0px 0px 0px'
+    },
+    propSchema: {
+      images: { type: 'list', label: 'Images', default: [], itemSchema: { src: { type: 'media', label: 'Source', default: '' }, alt: { type: 'string', label: 'Alt', default: '' } } },
+      columns: { type: 'select', label: 'Colonnes', default: 3, options: ['2','3','4'] },
+      gap: { type: 'spacing', label: 'Espacement', default: '24px' }
+    }
+  },
+  testimonial: {
+    type: 'testimonial',
+    label: 'Témoignage',
+    icon: 'User',
+    canHaveChildren: false,
+    defaultProps: {
+      items: [],
+      columns: 2,
+      margin: '0px 0px 0px 0px',
+      padding: '0px 0px 0px 0px'
+    },
+    propSchema: {
+      items: {
+        type: 'list',
+        label: 'Témoignages',
+        default: [],
+        itemSchema: {
+          avatar: { type: 'media', label: 'Avatar', default: '' },
+          name: { type: 'string', label: 'Nom', default: '' },
+          role: { type: 'string', label: 'Rôle', default: '' },
+          quote: { type: 'richtext', label: 'Citation', default: '' }
+        }
+      },
+      columns: { type: 'select', label: 'Colonnes', default: 2, options: ['1','2','3'] }
+    }
+  },
+  map: {
+    type: 'map',
+    label: 'Carte',
+    icon: 'MapPin',
+    canHaveChildren: false,
+    defaultProps: {
+      embedUrl: '',
+      height: '400px',
+      margin: '0px 0px 0px 0px',
+      padding: '0px 0px 0px 0px'
+    },
+    propSchema: {
+      embedUrl: { type: 'string', label: "URL d'embed", default: '' },
+      height: { type: 'string', label: 'Hauteur', default: '400px' }
+    }
+  },
+  stats: {
+    type: 'stats',
+    label: 'Statistiques',
+    icon: 'BarChart3',
+    canHaveChildren: false,
+    defaultProps: {
+      items: [
+        {
+          number: '42 000',
+          label: 'Espaces de coworking dans le monde en 2025',
+          source: 'Source : Archie / Statista, 2025',
+          color: '#e5482d'
+        },
+        {
+          number: '84 %',
+          label: 'Des coworkers se sentent plus motivés et engagés',
+          source: 'Source : GCUC Global Coworking Survey',
+          color: '#2563eb'
+        },
+        {
+          number: '82 %',
+          label: 'Ont élargi leur réseau professionnel',
+          source: 'Source : Small Business Labs',
+          color: '#16a34a'
+        }
+      ],
+      columns: 3,
+      bg: '#ffffff',
+      padding: '80px 48px'
+    },
+    propSchema: {
+      items: {
+        type: 'list',
+        label: 'Cartes de statistiques',
+        default: [],
+        itemSchema: {
+          number: { type: 'string', label: 'Nombre / Métrique', default: '100' },
+          label: { type: 'string', label: 'Description', default: 'Description de la stat' },
+          source: { type: 'string', label: 'Source', default: 'Source' },
+          color: { type: 'color', label: 'Couleur thème', default: '#2563eb' }
+        }
+      },
+      columns: { type: 'select', label: 'Colonnes', default: 3, options: ['1', '2', '3', '4'] },
+      bg: { type: 'color', label: 'Fond Section', default: '#ffffff' },
+      padding: { type: 'spacing', label: 'Padding (T R B L)', default: '80px 48px' }
+    }
+  },
+  circular_gallery: {
+    type: 'circular_gallery',
+    label: 'Galerie Circulaire',
+    icon: 'GalleryHorizontal',
+    canHaveChildren: false,
+    defaultProps: {
+      title: 'Notre Galerie',
+      accentText: 'DÉCOUVREZ',
+      bg: '#0a0a0a',
+      height: '600px',
+      bend: 3,
+      textColor: '#ffffff',
+      borderRadius: 0.05,
+      scrollSpeed: 2,
+      scrollEase: 0.05,
+      items: [
+        { image: 'https://picsum.photos/seed/1/800/600?grayscale', text: 'Bridge' },
+        { image: 'https://picsum.photos/seed/2/800/600?grayscale', text: 'Desk Setup' },
+        { image: 'https://picsum.photos/seed/3/800/600?grayscale', text: 'Waterfall' },
+        { image: 'https://picsum.photos/seed/4/800/600?grayscale', text: 'Strawberries' },
+        { image: 'https://picsum.photos/seed/5/800/600?grayscale', text: 'Deep Diving' },
+        { image: 'https://picsum.photos/seed/16/800/600?grayscale', text: 'Train Track' }
+      ]
+    },
+    propSchema: {
+      title: { type: 'string', label: 'Titre Section', default: 'Notre Galerie', i18n: true },
+      accentText: { type: 'string', label: 'Texte Accent', default: 'DÉCOUVREZ', i18n: true },
+      bg: { type: 'color', label: 'Couleur de fond', default: '#0a0a0a' },
+      height: { type: 'string', label: 'Hauteur galerie (ex: 600px)', default: '600px' },
+      bend: { type: 'select', label: 'Courbure', default: '3', options: ['-5', '-3', '-1', '0', '1', '3', '5'] },
+      textColor: { type: 'color', label: 'Couleur texte images', default: '#ffffff' },
+      scrollSpeed: { type: 'select', label: 'Vitesse défilement', default: '2', options: ['1', '2', '3', '5'] },
+      scrollEase: { type: 'select', label: 'Fluidité défilement', default: '0.05', options: ['0.02', '0.05', '0.1', '0.2'] },
+      items: {
+        type: 'list',
+        label: 'Images de la galerie',
+        default: [],
+        itemSchema: {
+          image: { type: 'media', label: 'Image', default: '' },
+          text: { type: 'string', label: 'Texte / Légende', default: 'Photo' }
+        }
+      }
     }
   }
 };

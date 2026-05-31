@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import client from '../api/client'
 import { Link, useNavigate } from 'react-router-dom'
 import MenuEditor from '../builder/components/MenuEditor'
-import { Plus, FileText, Globe, Search, Copy, Edit3, Trash, Settings, Menu, Upload, Newspaper } from 'lucide-react'
+import { useProject } from '../contexts/ProjectContext'
+import { Plus, FileText, Globe, Search, Copy, Edit3, Trash, Settings, Menu, Upload, Newspaper, Briefcase, ChevronDown, X, Box, Database, ClipboardList, Download, Users, Zap } from 'lucide-react'
 
 interface Page {
   id: string
@@ -26,20 +27,30 @@ const slugify = (text: string) => {
 }
 
 const DashboardPage: React.FC = () => {
+  const { projects, currentProject, setCurrentProject, refreshProjects } = useProject()
   const [pages, setPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, pageId: string } | null>(null)
   const [renamingPage, setRenamingPage] = useState<Page | null>(null)
   const [newTitle, setNewTitle] = useState('')
-  const [showSettings, setShowSettings] = useState(false)
   const [headerConfig, setHeaderConfig] = useState<any>(null)
   const [footerConfig, setFooterConfig] = useState<any>(null)
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [showSettings, setShowSettings] = useState(false)
+  const [createProjectModal, setCreateProjectModal] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [newProjectSlug, setNewProjectSlug] = useState('')
+  const [newProjectDesc, setNewProjectDesc] = useState('')
+  const [templates, setTemplates] = useState<{id: string, name: string, description: string}[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   const fetchPages = async () => {
     try {
-      const response = await client.get('/pages')
+      const response = await client.get('/pages/', {
+        headers: { 'X-Project-ID': currentProject?.id }
+      })
       setPages(response.data)
     } catch (err) {
       console.error(err)
@@ -50,7 +61,7 @@ const DashboardPage: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await client.get('/settings')
+      const response = await client.get('/settings/')
       setHeaderConfig(response.data.header_config)
       setFooterConfig(response.data.footer_config)
     } catch (err) {
@@ -59,27 +70,35 @@ const DashboardPage: React.FC = () => {
   }
 
   useEffect(() => {
-    fetchPages()
-    fetchSettings()
-    
+    // Fetch pages and settings when component mounts or currentProject changes
+    if (currentProject) {
+      fetchPages()
+      fetchSettings()
+    }
+
     const handleClick = () => setContextMenu(null)
     window.addEventListener('click', handleClick)
     return () => window.removeEventListener('click', handleClick)
+  }, [currentProject])
+
+  useEffect(() => {
+    // Load templates from public endpoint (no auth required)
+    client.get('/projects/templates-public').catch(() => {})
   }, [])
 
   const handleCreatePage = async () => {
     try {
       const title = 'Nouvelle Page'
-      const slug = `page-${Date.now()}` // Default still has timestamp for uniqueness initially
+      const slug = `page-${Date.now()}`
       const payload = {
         title,
         slug,
         status: 'draft',
         schema: {
-          root: { 
-            id: 'canvas-root', 
-            type: 'root', 
-            props: {}, 
+          root: {
+            id: 'canvas-root',
+            type: 'root',
+            props: {},
             children: [
               {
                 id: `header-${Date.now()}`,
@@ -93,12 +112,14 @@ const DashboardPage: React.FC = () => {
                 props: footerConfig || {},
                 children: []
               }
-            ] 
+            ]
           },
           meta: { title: 'Nouvelle Page', description: '', lang: 'fr' }
         }
       }
-      const response = await client.post('/pages', payload)
+      const response = await client.post('/pages/', payload, {
+        headers: { 'X-Project-ID': currentProject?.id }
+      })
       navigate(`/builder/${response.data.id}`)
     } catch (err) {
       console.error(err)
@@ -198,34 +219,103 @@ const DashboardPage: React.FC = () => {
     }
   }
 
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim() || !newProjectSlug.trim()) {
+      alert("Veuillez remplir le nom et le slug du projet")
+      return
+    }
+    try {
+      const response = await client.post('/projects/', {
+        name: newProjectName,
+        slug: newProjectSlug,
+        description: newProjectDesc,
+      })
+
+      // Apply template if selected
+      if (selectedTemplate) {
+        await client.post(`/projects/${response.data.id}/apply-template`, {
+          template_id: selectedTemplate,
+        })
+      }
+
+      await refreshProjects()
+      setCurrentProject(response.data)
+      setCreateProjectModal(false)
+      setNewProjectName('')
+      setNewProjectSlug('')
+      setNewProjectDesc('')
+      setSelectedTemplate('')
+      setNotification({ message: 'Projet créé avec succès !', type: 'success' })
+    } catch (err: any) {
+      console.error(err)
+      setNotification({ message: err.response?.data?.detail || "Erreur lors de l'initialisation du projet", type: 'error' })
+    }
+  }
+
+  const handleExport = async () => {
+    if (!currentProject) return
+    try {
+      const res = await client.get(`/projects/${currentProject.id}/export`)
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `export-${currentProject.slug}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setNotification({ message: `Projet exporté : ${currentProject.name}`, type: 'success' })
+    } catch (err) {
+      console.error(err)
+      setNotification({ message: "Erreur lors de l'export", type: 'error' })
+    }
+  }
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      const res = await client.post('/projects/import', { data }, {
+        headers: { 'X-Project-ID': currentProject?.id }
+      })
+      await refreshProjects()
+      setCurrentProject(res.data.project)
+      setNotification({ message: `Projet importé : ${res.data.project.name}`, type: 'success' })
+    } catch (err: any) {
+      console.error(err)
+      setNotification({ message: err.response?.data?.detail || "Erreur lors de l'import", type: 'error' })
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-black text-white p-8">
+    <>
       <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-12">
+        <header className="flex justify-between items-center mb-10 pb-6 border-b border-neutral-900">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter">Dashboard</h1>
-            <p className="text-neutral-500 text-sm mt-1">Gérez vos pages et optimisations SEO/GEO</p>
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-white">Pages du Site</h1>
+            <div className="flex items-center gap-2 mt-1">
+              {currentProject ? (
+                <span className="text-blue-400 text-xs font-bold uppercase tracking-widest bg-blue-500/5 px-3 py-1 rounded-full border border-blue-500/10">Projet : {currentProject.name}</span>
+              ) : (
+                <span className="text-neutral-500 text-xs font-bold uppercase tracking-widest bg-neutral-900 px-3 py-1 rounded-full border border-neutral-800">Aucun projet sélectionné</span>
+              )}
+            </div>
           </div>
-          <div className="flex gap-4">
-            <button 
-              onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all"
-            >
-              <Menu size={16} className="text-blue-500" /> Navigation & Footer
-            </button>
-            <Link 
-              to="/dashboard/articles"
-              className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all"
-            >
-              <Newspaper size={16} className="text-orange-500" /> Actualités
-            </Link>
-            <button 
-              onClick={handleCreatePage}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all"
-            >
-              <Plus size={16} /> Nouvelle Page
-            </button>
-          </div>
+          
+          <button
+            onClick={handleCreatePage}
+            disabled={!currentProject}
+            className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+              currentProject 
+                ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 text-white cursor-pointer' 
+                : 'bg-neutral-900 text-neutral-600 border border-neutral-800 cursor-not-allowed'
+            }`}
+          >
+            <Plus size={16} /> Nouvelle Page
+          </button>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -234,8 +324,8 @@ const DashboardPage: React.FC = () => {
               Chargement des contenus...
             </div>
           ) : pages.length === 0 ? (
-            <div className="col-span-full py-20 text-center border-2 border-dashed border-neutral-800 rounded-3xl text-neutral-600">
-              <p className="uppercase tracking-widest text-xs">Aucune page créée pour le moment</p>
+            <div className="col-span-full py-20 text-center border-2 border-dashed border-neutral-850 rounded-3xl text-neutral-600">
+              <p className="uppercase tracking-widest text-xs font-bold">Aucune page créée pour le moment</p>
             </div>
           ) : (
             pages.map((page) => (
@@ -246,10 +336,10 @@ const DashboardPage: React.FC = () => {
               >
                 <Link 
                   to={`/builder/${page.id}`}
-                  className="block group bg-neutral-900 border border-neutral-800 p-6 rounded-2xl hover:border-blue-500/50 transition-all hover:shadow-2xl hover:shadow-blue-500/5"
+                  className="block group bg-neutral-900/50 border border-neutral-850 p-6 rounded-2xl hover:border-blue-500/50 transition-all hover:shadow-2xl hover:shadow-blue-500/5 duration-300 hover:bg-neutral-900"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-black rounded-xl border border-neutral-800 group-hover:border-blue-500/30 transition-all">
+                    <div className="p-3 bg-black rounded-xl border border-neutral-850 group-hover:border-blue-500/30 transition-all">
                       <FileText size={20} className="text-neutral-400 group-hover:text-blue-400" />
                     </div>
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
@@ -263,10 +353,10 @@ const DashboardPage: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-lg font-bold mb-1 truncate">{page.title}</h2>
+                  <h2 className="text-lg font-bold mb-1 truncate group-hover:text-blue-400 transition-colors">{page.title}</h2>
                   <p className="text-neutral-500 text-xs font-mono mb-6 italic">/{page.slug}</p>
                   
-                  <div className="flex gap-4 pt-4 border-t border-neutral-800/50">
+                  <div className="flex gap-4 pt-4 border-t border-neutral-850/50">
                     <div className="flex items-center gap-1.5">
                       <Globe size={12} className="text-neutral-600" />
                       <span className="text-[10px] font-bold text-neutral-500 uppercase">SEO</span>
@@ -662,11 +752,11 @@ const DashboardPage: React.FC = () => {
             </div>
             <h3 className="text-xl font-black uppercase tracking-tighter mb-2">{notification.type === 'success' ? 'Félicitations !' : 'Oups !'}</h3>
             <p className="text-neutral-500 text-sm font-medium mb-10 leading-relaxed">{notification.message}</p>
-            <button 
+            <button
               onClick={() => setNotification(null)}
               className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg ${
-                notification.type === 'success' 
-                ? 'bg-green-600 hover:bg-green-500 shadow-green-900/20' 
+                notification.type === 'success'
+                ? 'bg-green-600 hover:bg-green-500 shadow-green-900/20'
                 : 'bg-red-600 hover:bg-red-500 shadow-red-900/20'
               }`}
             >
@@ -675,7 +765,51 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Create Project Modal */}
+      {createProjectModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-black uppercase tracking-widest">Créer un projet</h3>
+              <button onClick={() => setCreateProjectModal(false)} className="text-neutral-500 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Nom du projet</label>
+                <input type="text" className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="Mon Site" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Slug</label>
+                <input type="text" className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="mon-site" value={newProjectSlug} onChange={(e) => setNewProjectSlug(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Description</label>
+                <textarea className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="Description du projet..." value={newProjectDesc} onChange={(e) => setNewProjectDesc(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase mb-2">Template de départ</label>
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                  className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none"
+                >
+                  <option value="">Page vierge (aucun template)</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} — {t.description}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setCreateProjectModal(false)} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Annuler</button>
+              <button onClick={handleCreateProject} className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all">Créer le projet</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </>
   )
 }
 

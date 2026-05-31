@@ -17,6 +17,7 @@ const LoginPage: React.FC = () => {
       
       const response = await client.post('/auth/login', formData)
       localStorage.setItem('token', response.data.access_token)
+      window.dispatchEvent(new Event('auth-token-changed'))
       navigate('/dashboard')
     } catch (err) {
       setError('Email ou mot de passe incorrect')
