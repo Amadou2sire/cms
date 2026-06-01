@@ -5,6 +5,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { useProject } from '../contexts/ProjectContext'
 import { Trash2, ChevronDown, Menu as MenuIcon, X, Monitor, Layers, Activity, Shield, Settings, Cpu, Newspaper, ArrowRight, Calendar, MessageCircle, Mail, Phone, MapPin, Send, Target, Eye, Table, Globe } from 'lucide-react'
 import client from '../api/client'
+import { extractExcerpt } from '../utils/content'
 
 /** Prefix a relative URL with the language code if not already prefixed. */
 function normalizeHref(href: string, lang: string): string {
@@ -888,8 +889,9 @@ const NewsBlock: React.FC<{ node: BlockNode; mode: 'edit' | 'preview' }> = ({ no
                   </h3>
                   <div 
                     className="text-neutral-500 text-sm leading-relaxed line-clamp-3 opacity-80"
-                    dangerouslySetInnerHTML={{ __html: article.content.substring(0, 150) + '...' }}
-                  />
+                  >
+                    {extractExcerpt(article.content, 150)}
+                  </div>
                   <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-900 group-hover:text-[#e5482d] transition-all pt-2">
                     Lire la suite <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                   </div>
